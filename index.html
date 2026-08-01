@@ -2112,7 +2112,6 @@
                 </div>
                 <div class="mt-12 pt-8 border-t border-white/10 text-center text-white/30 text-sm flex flex-wrap items-center justify-center gap-4" id="footerCopyright">
                     <span>&copy; 2026 KurdMDb. هەموو مافەکان پارێزراون.</span>
-                    <!-- سایتمەپ لابرا و شاردرایەوە -->
                 </div>
             </div>
         </footer>
@@ -2377,9 +2376,9 @@
            ================================================================ */
 
         // ─── CONFIGURATION ──────────────────────────────────────────────
-        // کلیلەکان لە گۆڕاوەکانی ژینگە وەردەگیرێن
-        const SUPABASE_URL =https://ayxuklozwgnrzveisvof.supabase.co
-        const SUPABASE_ANON_KEY =eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5eHVrbG96d2ducnp2ZWlzdm9mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4ODY2MjAsImV4cCI6MjA5NzQ2MjYyMH0.liuaBRrdk2ChCqgbl0NGB33IShFJmb-qUlla7s0Cnxg
+        // کلیلەکان ڕاستەوخۆ لە کۆدەکەدا
+        const SUPABASE_URL = 'https://ayxuklozwgnrzveisvof.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5eHVrbG96d2ducnp2ZWlzdm9mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4ODY2MjAsImV4cCI6MjA5NzQ2MjYyMH0.liuaBRrdk2ChCqgbl0NGB33IShFJmb-qUlla7s0Cnxg';
         const SITE_URL = 'https://kurdmdb.vercel.app';
 
         // ─── SUPABASE CLIENT ────────────────────────────────────────────
@@ -3351,7 +3350,6 @@
                 labelEl.textContent = 'کەس ئێستا لەسەر ماڵپەڕەکەن';
             }
 
-            // tiny animation
             gsap.fromTo(badge, { scale: 0.95, opacity: 0.8 }, { scale: 1, opacity: 1, duration: 0.3, ease: 'power2.out' });
         }
 
