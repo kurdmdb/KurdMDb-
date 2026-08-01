@@ -1,6 +1,6 @@
 // netlify/functions/sitemap.mjs
 //
-// Serves a fully dynamic sitemap.xml at https://kurdmdb1.netlify.app/sitemap.xml
+// Serves a fully dynamic sitemap.xml at https://kurdmdb.vercel.app/sitemap.xml
 // Generated live from Supabase on every request — no server to run, no
 // build step, no script to re-run manually. Deploy this file to your
 // repo at netlify/functions/sitemap.mjs and Netlify picks it up
@@ -9,7 +9,7 @@
 const SUPABASE_URL = 'https://ayxuklozwgnrzveisvof.supabase.co';
 const SUPABASE_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5eHVrbG96d2ducnp2ZWlzdm9mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4ODY2MjAsImV4cCI6MjA5NzQ2MjYyMH0.liuaBRrdk2ChCqgbl0NGB33IShFJmb-qUlla7s0Cnxg';
-const SITE_URL = 'https://kurdmdb1.netlify.app';
+const SITE_URL = 'https://kurdmdb.vercel.app';
 
 const STATIC_PAGES = [
   { path: '/', changefreq: 'daily', priority: '1.0' },
