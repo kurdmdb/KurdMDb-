@@ -3,4 +3,4 @@ User-agent: *
 Allow: /
 
 # Point to the Sitemap
-Sitemap: https://kurdmdb1.netlify.app/sitemap.xml
+Sitemap: https://kurdmdb.vercel.app/sitemap.xml
