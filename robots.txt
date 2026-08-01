@@ -1,0 +1,6 @@
+# Allow all crawlers, including AI bots (ChatGPT, Gemini, Claude, DeepSeek, Perplexity, etc.) and search engines
+User-agent: *
+Allow: /
+
+# Point to the Sitemap
+Sitemap: https://kurdmdb1.netlify.app/sitemap.xml
