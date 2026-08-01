@@ -1,15 +1,12 @@
-// netlify/functions/sitemap.mjs
+// api/sitemap.js
 //
-// Serves a fully dynamic sitemap.xml at https://kurdmdb.vercel.app/sitemap.xml
-// Generated live from Supabase on every request — no server to run, no
-// build step, no script to re-run manually. Deploy this file to your
-// repo at netlify/functions/sitemap.mjs and Netlify picks it up
-// automatically (default functions directory).
+// Serves a fully dynamic sitemap.xml at https://kurdmdb.vercel.app/api/sitemap
+// Generated live from Supabase on every request.
 
 const SUPABASE_URL = 'https://ayxuklozwgnrzveisvof.supabase.co';
 const SUPABASE_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5eHVrbG96d2ducnp2ZWlzdm9mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4ODY2MjAsImV4cCI6MjA5NzQ2MjYyMH0.liuaBRrdk2ChCqgbl0NGB33IShFJmb-qUlla7s0Cnxg';
-const SITE_URL = 'https://kurdmdb.vercel.app';
+const SITE_URL = 'https://kurdmdb.vercel.app';[span_0](start_span)[span_0](end_span)
 
 const STATIC_PAGES = [
   { path: '/', changefreq: 'daily', priority: '1.0' },
@@ -43,8 +40,6 @@ function urlEntry(loc, lastmod, changefreq, priority) {
   ].filter(Boolean).join('\n');
 }
 
-// Pages through the table (1000 rows/request) so the sitemap stays
-// complete no matter how large the catalog grows.
 async function fetchAllRows(table, pageSize = 1000) {
   const rows = [];
   let from = 0;
@@ -68,7 +63,7 @@ async function fetchAllRows(table, pageSize = 1000) {
   return rows;
 }
 
-export default async (req, context) => {
+export default async function handler(req, res) {
   try {
     const today = new Date().toISOString().split('T')[0];
     const entries = STATIC_PAGES.map((p) =>
@@ -97,20 +92,11 @@ export default async (req, context) => {
       + '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
       + entries.join('\n') + '\n</urlset>\n';
 
-    return new Response(xml, {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/xml; charset=utf-8',
-        // Cache for an hour so repeated crawler hits don't re-query
-        // Supabase every single time.
-        'Cache-Control': 'public, max-age=3600, s-maxage=3600',
-      },
-    });
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=3600');
+    return res.status(200).send(xml);
   } catch (e) {
-    return new Response(`<!-- sitemap generation failed: ${e.message} -->`, {
-      status: 500,
-      headers: { 'Content-Type': 'application/xml; charset=utf-8' },
-    });
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    return res.status(500).send(`<!-- sitemap generation failed: ${e.message} -->`);
   }
-};
-
+}
