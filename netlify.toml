@@ -1,4 +1,0 @@
-[[redirects]]
-from = "/sitemap.xml"
-to = "/.vercel/functions/sitemap"
-status = 200
