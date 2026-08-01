@@ -1803,6 +1803,54 @@
         .ad-container:hover {
             transform: scale(1.02);
         }
+
+        /* ─── Online Users Badge ─── */
+        .online-users-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 60px;
+            padding: 10px 18px 10px 16px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            font-size: 0.9rem;
+            color: #d1d5db;
+            pointer-events: none;
+            user-select: none;
+        }
+        .online-users-badge .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #34D399;
+            box-shadow: 0 0 12px rgba(52, 211, 153, 0.6);
+            animation: pulse-dot 1.8s ease-in-out infinite;
+            flex-shrink: 0;
+        }
+        @keyframes pulse-dot {
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.6;
+                transform: scale(0.85);
+            }
+        }
+        .online-users-badge .count {
+            font-weight: 700;
+            color: #fff;
+        }
+        .online-users-badge .label {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        .online-users-badge .label b {
+            color: #fff;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -1920,7 +1968,7 @@
         <button class="nav-icon" id="navProfile" onclick="handleProfileClick()" aria-label="Profile">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
+                <circle cx="12" cy="12" r="4" />
             </svg>
             <span class="nav-label">پڕۆفایل</span>
         </button>
@@ -1949,6 +1997,17 @@
                 </div>
             </div>
         </section>
+
+        <!-- ─── ONLINE USERS BADGE ─── (placed below hero, above ads) ─── -->
+        <div class="relative z-10 flex justify-center py-3 px-5 pointer-events-none">
+            <div class="online-users-badge pointer-events-auto" id="onlineUsersBadge">
+                <span class="dot"></span>
+                <span>
+                    <span class="count" id="onlineCount">0</span>
+                    <span class="label" id="onlineLabel">کەس ئێستا لەسەر ماڵپەڕەکەیە</span>
+                </span>
+            </div>
+        </div>
 
         <!-- ─── ADS SECTION ─── -->
         <section class="py-6 px-5 md:px-10" id="adsSection">
@@ -2053,7 +2112,7 @@
                 </div>
                 <div class="mt-12 pt-8 border-t border-white/10 text-center text-white/30 text-sm flex flex-wrap items-center justify-center gap-4" id="footerCopyright">
                     <span>&copy; 2026 KurdMDb. هەموو مافەکان پارێزراون.</span>
-                    <a href="/sitemap.xml" class="text-purple-400/60 hover:text-purple-400 transition text-xs" target="_blank">🗺️ سایتەمپ</a>
+                    <!-- سایتمەپ لابرا و شاردرایەوە -->
                 </div>
             </div>
         </footer>
@@ -2318,9 +2377,9 @@
            ================================================================ */
 
         // ─── CONFIGURATION ──────────────────────────────────────────────
-        const SUPABASE_URL = 'https://ayxuklozwgnrzveisvof.supabase.co';
-        const SUPABASE_ANON_KEY =
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5eHVrbG96d2ducnp2ZWlzdm9mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4ODY2MjAsImV4cCI6MjA5NzQ2MjYyMH0.liuaBRrdk2ChCqgbl0NGB33IShFJmb-qUlla7s0Cnxg';
+        // کلیلەکان لە گۆڕاوەکانی ژینگە وەردەگیرێن
+        const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+        const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
         const SITE_URL = 'https://kurdmdb1.netlify.app';
 
         // ─── SUPABASE CLIENT ────────────────────────────────────────────
@@ -2331,6 +2390,10 @@
             try {
                 if (typeof supabase === 'undefined') {
                     console.warn('Supabase library not loaded.');
+                    return false;
+                }
+                if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+                    console.warn('Supabase credentials missing. Check environment variables.');
                     return false;
                 }
                 supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -2381,7 +2444,6 @@
 
         function updateMetaTag(name, content) {
             if (!content) return;
-            // Handle name attributes
             let el = document.querySelector(`meta[name="${name}"]`);
             if (!el) {
                 el = document.createElement('meta');
@@ -2468,14 +2530,12 @@
             if (isNavigating) return;
             isNavigating = true;
 
-            // Normalize path
             if (path === '/' || path === '') {
                 goHome();
                 isNavigating = false;
                 return;
             }
 
-            // Parse /movie/:slug or /animation/:slug
             const parts = path.replace(/^\/+/, '').split('/');
             if (parts.length === 2 && (parts[0] === 'movie' || parts[0] === 'animation')) {
                 const type = parts[0];
@@ -2487,7 +2547,6 @@
                         isNavigating = false;
                         return;
                     } else {
-                        // Not found -> redirect to home
                         console.warn('Content not found:', path);
                         goHome();
                         isNavigating = false;
@@ -2496,7 +2555,6 @@
                 }
             }
 
-            // Fallback: go home
             goHome();
             isNavigating = false;
         }
@@ -2529,18 +2587,15 @@
 
         window.showDetail = function(idOrSlug, type) {
             const all = [...allMoviesData, ...allAnimationsData];
-            // Try by id first (if number)
             let item = null;
             if (typeof idOrSlug === 'number' || !isNaN(Number(idOrSlug))) {
                 item = all.find(m => m.id === Number(idOrSlug));
             }
             if (!item) {
-                // Try by slug (string)
                 item = all.find(m => (m.slug || String(m.id)) === String(idOrSlug) && (m.type || '').toLowerCase() === type
                     .toLowerCase());
             }
             if (!item) {
-                // Fallback: search in all data
                 item = all.find(m => (m.slug || String(m.id)) === String(idOrSlug));
             }
             if (!item) {
@@ -2548,22 +2603,17 @@
                 return;
             }
 
-            // Update URL using slug
             const path = getPathForItem(item);
             if (window.location.pathname !== path) {
                 window.history.pushState({ type: 'detail', slug: getSlugForItem(item), id: item.id }, '', path);
             }
 
-            // Update SEO meta
             setDetailMeta(item, (item.type || '').toLowerCase());
-
-            // Render detail
             renderDetail(item);
             trackPageView(path);
             trackGA('view_item', { content_id: item.id, content_type: item.type });
         };
 
-        // Called from URL routing (slug only)
         function showDetailBySlug(slug, type) {
             const item = findContentBySlug(slug, type);
             if (!item) {
@@ -2581,13 +2631,12 @@
             trackGA('view_item', { content_id: item.id, content_type: item.type });
         }
 
-        // ─── RENDER DETAIL (core display logic) ──────────────────────
+        // ─── RENDER DETAIL ─────────────────────────────────────────────
 
         function renderDetail(item) {
             const type = (item.type || 'Movie').toLowerCase();
             const id = item.id;
 
-            // Increment view
             incrementView(id, type);
 
             const main = document.getElementById('detailMain');
@@ -2626,12 +2675,8 @@
             let isWatched = false;
             let avgRating = rating;
 
-            // ... (fetch user data async, but we render immediately and update later)
-            // We'll handle user interaction data in the detail page via async calls
-
             bg.style.backgroundImage = `url('${backdrop}')`;
 
-            // Subtitle badge
             let subtitleBadge = '';
             if (hasKurdishSubtitle) {
                 const websiteIds = item.website_ids || [];
@@ -2661,7 +2706,6 @@
                     `;
             }
 
-            // Photos
             let photosHTML = '';
             if (photos && photos.length > 0) {
                 const lightboxId = 'lightbox-' + id;
@@ -2685,7 +2729,6 @@
                     `;
             }
 
-            // Build detail HTML
             let detailHTML = `
                     <div class="max-w-7xl mx-auto flex flex-col-reverse lg:flex-row gap-10 lg:gap-16 items-center">
                         <div class="flex-1 w-full">
@@ -2824,7 +2867,6 @@
 
             main.innerHTML = detailHTML;
 
-            // Lightbox
             const lightboxOverlay = document.getElementById('lightbox-' + id);
             if (lightboxOverlay) {
                 const lightboxImg = lightboxOverlay.querySelector('img');
@@ -2854,7 +2896,6 @@
                 });
             }
 
-            // Trailer
             const watchBtn = document.getElementById('watchTrailerBtn');
             if (watchBtn && trailer) {
                 watchBtn.onclick = function() {
@@ -2868,7 +2909,6 @@
                 };
             }
 
-            // Rating stars
             const starsContainer = document.getElementById('userRatingStars');
             if (starsContainer) {
                 starsContainer.innerHTML = '';
@@ -2895,10 +2935,8 @@
                 }
             }
 
-            // Fetch user interaction data async
             fetchUserDetailData(item.id, type);
 
-            // Comments
             async function fetchComments() {
                 if (!supabaseClient) return [];
                 const { data, error } = await supabaseClient
@@ -2978,14 +3016,13 @@
                 };
             }
 
-            // Show page
             hideAllPages();
             document.getElementById('detailPage').style.display = 'block';
             window.scrollTo(0, 0);
             gsap.from('#detailPage', { opacity: 0, duration: 0.4 });
         }
 
-        // ─── FETCH USER DETAIL DATA (async) ──────────────────────────
+        // ─── FETCH USER DETAIL DATA ──────────────────────────────────
 
         async function fetchUserDetailData(contentId, type) {
             if (!supabaseClient || !currentUser || !currentUser.id) return;
@@ -3034,7 +3071,7 @@
             }
         }
 
-        // ─── EXPOSE GLOBAL FUNCTIONS (for inline onclick) ────────────
+        // ─── EXPOSE GLOBAL FUNCTIONS ──────────────────────────────────
 
         window.handleWatchlistToggle = async function(contentId, contentType) {
             if (!isLoggedIn()) {
@@ -3202,7 +3239,6 @@
                 if (error) throw error;
                 await addXP(10);
                 trackGA('like_comment', { content_id: contentId });
-                // Re-render comments (refresh from server)
                 const list = document.getElementById('commentsList');
                 if (list) {
                     const { data: newComments } = await supabaseClient
@@ -3259,6 +3295,65 @@
         let currentRankTab = 'top_movies';
         let leaderboardUsers = [];
         let recommendedIds = [];
+
+        // ─── ONLINE USERS (Realtime Presence) ────────────────────────
+        let onlineChannel = null;
+        let onlineCount = 0;
+
+        function initPresence() {
+            if (!supabaseClient) return;
+            if (onlineChannel) {
+                onlineChannel.unsubscribe();
+                onlineChannel = null;
+            }
+
+            const channel = supabaseClient.channel('online-users', {
+                config: { presence: { key: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2) } }
+            });
+
+            channel.on('presence', { event: 'sync' }, () => {
+                const state = channel.presenceState();
+                const users = Object.keys(state).length;
+                onlineCount = users;
+                updateOnlineBadge(users);
+            });
+
+            channel.on('presence', { event: 'join' }, ({ key }) => {
+                // only update if needed
+            });
+
+            channel.on('presence', { event: 'leave' }, ({ key }) => {
+                // only update if needed
+            });
+
+            channel.subscribe(async (status) => {
+                if (status === 'SUBSCRIBED') {
+                    await channel.track({ user_id: currentUser?.id || 'anonymous', online_at: new Date().toISOString() });
+                }
+            });
+
+            onlineChannel = channel;
+        }
+
+        function updateOnlineBadge(count) {
+            const badge = document.getElementById('onlineUsersBadge');
+            const countEl = document.getElementById('onlineCount');
+            const labelEl = document.getElementById('onlineLabel');
+            if (!badge || !countEl || !labelEl) return;
+
+            countEl.textContent = count;
+
+            if (count === 0) {
+                labelEl.textContent = 'کەس لەسەر ماڵپەڕەکە نیە';
+            } else if (count === 1) {
+                labelEl.textContent = 'کەس ئێستا لەسەر ماڵپەڕەکەیە';
+            } else {
+                labelEl.textContent = 'کەس ئێستا لەسەر ماڵپەڕەکەن';
+            }
+
+            // tiny animation
+            gsap.fromTo(badge, { scale: 0.95, opacity: 0.8 }, { scale: 1, opacity: 1, duration: 0.3, ease: 'power2.out' });
+        }
 
         // ─── XP / LEVEL / TITLES ──────────────────────────────────────
         const DEFAULT_TITLES = [
@@ -3553,7 +3648,6 @@
             if (copyEl) {
                 copyEl.innerHTML = `
                         <span>&copy; ${new Date().getFullYear()} ${s.website_name || 'KurdMDb'}. هەموو مافەکان پارێزراون.</span>
-                        <a href="/sitemap.xml" class="text-purple-400/60 hover:text-purple-400 transition text-xs" target="_blank">🗺️ سایتەمپ</a>
                     `;
             }
             const fb = document.getElementById('socialFb');
@@ -3678,7 +3772,7 @@
                         budget: m.budget || null,
                         writer: m.writer || null,
                         director: m.director || null,
-                        slug: m.slug || String(m.id) // ensure slug exists
+                        slug: m.slug || String(m.id)
                     };
                 });
                 return allMoviesData;
@@ -3729,7 +3823,7 @@
                         budget: m.budget || null,
                         writer: m.writer || null,
                         director: m.director || null,
-                        slug: m.slug || String(m.id) // ensure slug exists
+                        slug: m.slug || String(m.id)
                     };
                 });
                 return allAnimationsData;
@@ -4650,7 +4744,7 @@
             if (window.location.pathname !== '/works') {
                 window.history.pushState({ type: 'works' }, '', '/works');
             }
-            setHomeMeta(); // works page uses default meta
+            setHomeMeta();
             window.scrollTo(0, 0);
             currentPage = 1;
             applyFilters();
@@ -4741,7 +4835,7 @@
             applyFilters();
         };
 
-        // ─── GENERATE RECOMMENDATIONS (SINGLE) ──────────────────────────
+        // ─── GENERATE RECOMMENDATIONS ──────────────────────────────────
         window.generateRecommendations = function() {
             const type = document.getElementById('recType')?.value || 'all';
             const country = document.getElementById('recCountry')?.value || '';
@@ -5522,7 +5616,6 @@
                 return;
             }
 
-            // Check if we're on a detail page
             const parts = path.replace(/^\/+/, '').split('/');
             if (parts.length === 2 && (parts[0] === 'movie' || parts[0] === 'animation')) {
                 const type = parts[0];
@@ -5541,7 +5634,6 @@
                 }
             }
 
-            // Other pages
             const pageMap = {
                 '/works': { fn: showWorks, nav: 'navWorks' },
                 '/rankings': { fn: showRankings, nav: 'navRankings' },
@@ -5552,7 +5644,6 @@
 
             if (pageMap[path]) {
                 const entry = pageMap[path];
-                // Only call if not already on that page
                 const navEl = document.getElementById(entry.nav);
                 if (navEl && !navEl.classList.contains('active')) {
                     entry.fn();
@@ -5562,17 +5653,13 @@
                 return;
             }
 
-            // Fallback: go home
             goHome();
         }
 
         // ─── POPSTATE ──────────────────────────────────────────────────
         window.addEventListener('popstate', function(event) {
             if (isNavigating) return;
-            // If event.state has type, we can use it for faster routing
             if (event.state && event.state.type === 'detail' && event.state.slug) {
-                const type = event.state.type === 'detail' ? 'movie' : 'movie';
-                // Try to detect type from URL
                 const path = window.location.pathname;
                 const parts = path.replace(/^\/+/, '').split('/');
                 if (parts.length === 2) {
@@ -5590,7 +5677,6 @@
                     }
                 }
             }
-            // Fallback: resolve from path
             resolveRoute();
         });
 
@@ -5618,6 +5704,9 @@
                     fetchWebsites()
                 ]);
 
+                // Initialize Presence after data load
+                initPresence();
+
                 const allContent = [...allMoviesData, ...allAnimationsData];
                 renderHero(allHeroSlides);
                 renderAds(allAds);
@@ -5641,11 +5730,8 @@
                 currentPage = 1;
                 applyFilters();
 
-                // ─── ROUTE RESOLUTION ──────────────────────────────────────
-                // Set default meta first
                 setHomeMeta();
 
-                // Resolve current route
                 const path = window.location.pathname;
                 if (path === '/' || path === '') {
                     hideAllPages();
@@ -5658,7 +5744,7 @@
 
                 trackPageView(window.location.pathname);
                 isInitialized = true;
-                console.log('✅ KurdMDb Final initialized with SEO routing!');
+                console.log('✅ KurdMDb Final initialized with SEO routing & online presence!');
 
             } catch (e) {
                 console.error('❌ Initialization error:', e);
