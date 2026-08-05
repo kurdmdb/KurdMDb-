@@ -1,0 +1,279 @@
+{
+  "backup_time": "2026-08-05T23:10:45.004Z",
+  "database": "supabase",
+  "data": {
+    "ranking_scores": [],
+    "movies": [],
+    "profiles": [
+      {
+        "id": "ae4d6bf2-10b4-4f5c-8bf3-40f3741294d9",
+        "username": "Amez",
+        "email": "amezazad752@gmail.com",
+        "avatar_url": null,
+        "xp": 720,
+        "level": 2,
+        "title": "ئەندامی نوێ",
+        "join_date": "2026-07-02T17:27:48.595685+00:00",
+        "updated_at": "2026-08-04T23:34:46.021714+00:00",
+        "role": "super",
+        "password": null
+      },
+      {
+        "id": "1ea8676d-c04d-4774-b2c1-21a32225ca73",
+        "username": "Almas Hakim",
+        "email": "almashakim04@gmail.com",
+        "avatar_url": null,
+        "xp": 60,
+        "level": 1,
+        "title": "ئەندامی نوێ",
+        "join_date": "2026-06-30T07:10:32.544518+00:00",
+        "updated_at": "2026-06-30T07:11:16.391127+00:00",
+        "role": "user",
+        "password": null
+      },
+      {
+        "id": "cb3b73c4-bc46-4932-945a-458d2ab3682f",
+        "username": "yuta",
+        "email": "mobaildanyal832@gmail.com",
+        "avatar_url": null,
+        "xp": 0,
+        "level": 1,
+        "title": "ئەندامی نوێ",
+        "join_date": "2026-06-30T11:57:35.116522+00:00",
+        "updated_at": "2026-06-30T11:57:35.116522+00:00",
+        "role": "user",
+        "password": null
+      },
+      {
+        "id": "5c094560-33b0-4a94-a942-2d8975cb09ea",
+        "username": "Goran",
+        "email": "gorankarash780@gmail.com",
+        "avatar_url": null,
+        "xp": 40,
+        "level": 1,
+        "title": "ئەندامی نوێ",
+        "join_date": "2026-08-03T13:00:25.938521+00:00",
+        "updated_at": "2026-08-03T13:05:18.096827+00:00",
+        "role": "user",
+        "password": null
+      },
+      {
+        "id": "49508e0a-d363-4e05-8ddc-323d32692e48",
+        "username": "Amez",
+        "email": "amezazad1000@gmail.com",
+        "avatar_url": null,
+        "xp": 0,
+        "level": 1,
+        "title": "ئەندامی نوێ",
+        "join_date": "2026-07-18T11:18:09.515879+00:00",
+        "updated_at": "2026-07-18T11:18:09.515879+00:00",
+        "role": "user",
+        "password": null
+      },
+      {
+        "id": "8e795e47-58f3-4bf9-a92c-2d8b6ca4c15d",
+        "username": "shene",
+        "email": "shenehersh762@gmail.com",
+        "avatar_url": null,
+        "xp": 80,
+        "level": 1,
+        "title": "ئەندامی نوێ",
+        "join_date": "2026-06-30T21:27:08.368758+00:00",
+        "updated_at": "2026-06-30T21:28:28.398741+00:00",
+        "role": "user",
+        "password": null
+      },
+      {
+        "id": "62c7b82d-1d7d-47c3-a062-16ecd0972f78",
+        "username": "Klaus",
+        "email": "yasaminbadr2026@gmail.com",
+        "avatar_url": null,
+        "xp": 0,
+        "level": 1,
+        "title": "ئەندامی نوێ",
+        "join_date": "2026-07-21T19:11:20.502622+00:00",
+        "updated_at": "2026-07-21T19:11:20.502622+00:00",
+        "role": "user",
+        "password": null
+      },
+      {
+        "id": "3785a33a-5458-4386-943a-8503b85edaef",
+        "username": "دیدارهیوا",
+        "email": "didarhiwa20262024@gmail.com",
+        "avatar_url": null,
+        "xp": 140,
+        "level": 1,
+        "title": "ئەندامی نوێ",
+        "join_date": "2026-08-01T10:50:12.640084+00:00",
+        "updated_at": "2026-08-01T10:51:35.833105+00:00",
+        "role": "user",
+        "password": null
+      },
+      {
+        "id": "cc46e291-6c09-4b72-aa4f-f88821ed42f7",
+        "username": "Yaqub",
+        "email": "yaqoubnqaby@gmail.com",
+        "avatar_url": null,
+        "xp": 60,
+        "level": 1,
+        "title": "ئەندامی نوێ",
+        "join_date": "2026-06-29T18:04:29.772032+00:00",
+        "updated_at": "2026-06-29T18:05:30.205351+00:00",
+        "role": "user",
+        "password": null
+      },
+      {
+        "id": "d4d5203a-7e3c-43bd-a86b-0b31d9c52e7e",
+        "username": "Omar12",
+        "email": "omarsherwan1122@gmail.com",
+        "avatar_url": "https://ayxuklozwgnrzveisvof.supabase.co/storage/v1/object/public/avatars/d4d5203a-7e3c-43bd-a86b-0b31d9c52e7e-1783101332796.jpg",
+        "xp": 240,
+        "level": 1,
+        "title": "ئەندامی نوێ",
+        "join_date": "2026-07-03T17:55:19.259787+00:00",
+        "updated_at": "2026-07-03T18:15:49.938637+00:00",
+        "role": "user",
+        "password": null
+      },
+      {
+        "id": "baea76cb-8e73-4de3-a1b2-0883698139b1",
+        "username": "El",
+        "email": "elyasidrees99@gmail.com",
+        "avatar_url": null,
+        "xp": 80,
+        "level": 1,
+        "title": "ئەندامی نوێ",
+        "join_date": "2026-06-29T20:44:46.896632+00:00",
+        "updated_at": "2026-06-29T20:45:36.971652+00:00",
+        "role": "user",
+        "password": null
+      }
+    ],
+    "watched": [],
+    "ratings": [],
+    "comments": [],
+    "statistics": [],
+    "top250": [
+      {
+        "id": 3,
+        "content_id": 133,
+        "content_type": "movie",
+        "rank": 1,
+        "created_at": "2026-08-05T11:01:35.371+00:00",
+        "updated_at": "2026-08-05T11:01:35.371+00:00"
+      }
+    ],
+    "comment_likes": [],
+    "collections": [
+      {
+        "id": 10,
+        "name": "فیلمە خەیاڵییەکان",
+        "slug": "sci-fi-movies",
+        "cover_url": "https://picsum.photos/seed/scifi-collection/800/300",
+        "description": "باشترین فیلمە خەیاڵی-زانستییەکان",
+        "display_order": 2,
+        "created_at": "2026-08-05T10:02:13.264193+00:00",
+        "updated_at": "2026-08-05T10:02:13.264193+00:00"
+      },
+      {
+        "id": 11,
+        "name": "فیلمە پاڵەوانییەکان",
+        "slug": "hero-journey",
+        "cover_url": "https://picsum.photos/seed/hero-collection/800/300",
+        "description": "گەشتی پاڵەوانەکان لە ناو فیلمە بەناوبانگەکاندا",
+        "display_order": 3,
+        "created_at": "2026-08-05T10:02:13.264193+00:00",
+        "updated_at": "2026-08-05T10:02:13.264193+00:00"
+      },
+      {
+        "id": 14,
+        "name": "Marvel",
+        "slug": "marvel",
+        "cover_url": "https://i.postimg.cc/2j9YhHH5/IMG-8560.jpg",
+        "description": "فیلمەکانی مارڤڵ",
+        "display_order": 1,
+        "created_at": "2026-08-05T10:49:08.233+00:00",
+        "updated_at": "2026-08-05T10:49:08.232+00:00"
+      }
+    ],
+    "collection_items": [
+      {
+        "id": 15,
+        "collection_id": 10,
+        "content_id": 60,
+        "display_order": 1,
+        "content_type": "movie",
+        "created_at": "2026-08-05T10:02:13.264193+00:00"
+      },
+      {
+        "id": 16,
+        "collection_id": 10,
+        "content_id": 58,
+        "display_order": 2,
+        "content_type": "movie",
+        "created_at": "2026-08-05T10:02:13.264193+00:00"
+      },
+      {
+        "id": 17,
+        "collection_id": 11,
+        "content_id": 58,
+        "display_order": 1,
+        "content_type": "movie",
+        "created_at": "2026-08-05T10:02:13.264193+00:00"
+      },
+      {
+        "id": 18,
+        "collection_id": 11,
+        "content_id": 60,
+        "display_order": 2,
+        "content_type": "movie",
+        "created_at": "2026-08-05T10:02:13.264193+00:00"
+      },
+      {
+        "id": 19,
+        "collection_id": 14,
+        "content_id": 73,
+        "display_order": 1,
+        "content_type": "movie",
+        "created_at": "2026-08-05T10:59:41.726+00:00"
+      }
+    ],
+    "ads": [],
+    "animation": [],
+    "websites": [],
+    "hero_slides": [],
+    "watchlists": [
+      {
+        "id": 1,
+        "user_id": "baea76cb-8e73-4de3-a1b2-0883698139b1",
+        "content_id": 54,
+        "content_type": "Movie",
+        "added_at": "2026-08-04T23:56:34.470272+00:00"
+      },
+      {
+        "id": 5,
+        "user_id": "ae4d6bf2-10b4-4f5c-8bf3-40f3741294d9",
+        "content_id": 77,
+        "content_type": "movie",
+        "added_at": "2026-08-05T00:04:00.328866+00:00"
+      },
+      {
+        "id": 6,
+        "user_id": "ae4d6bf2-10b4-4f5c-8bf3-40f3741294d9",
+        "content_id": 61,
+        "content_type": "movie",
+        "added_at": "2026-08-05T12:18:50.323266+00:00"
+      }
+    ],
+    "website_settings": [],
+    "movie_genres": [],
+    "movie_countries": [],
+    "movie_cast": [],
+    "animation_genres": [],
+    "animation_countries": [],
+    "animation_cast": [],
+    "levels": [],
+    "genres": [],
+    "countries": []
+  }
+}
