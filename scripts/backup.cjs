@@ -36,12 +36,8 @@ async function runBackup() {
   try {
     console.log('🚀 Backup process started...');
 
-    // هەموو خشتەکانی public schema وەربگرە
-    const { data: tables, error: tableError } = await supabase
-      .from('information_schema.tables')
-      .select('table_name')
-      .eq('table_schema', 'public')
-      .eq('table_type', 'BASE TABLE');
+    // هەموو خشتەکانی public schema وەربگرە (بەکارهێنانی RPC function)
+    const { data: tables, error: tableError } = await supabase.rpc('get_public_tables');
 
     if (tableError) {
       console.error('❌ Error fetching tables:', tableError.message);
@@ -62,10 +58,7 @@ async function runBackup() {
         }
       }
     } else {
-      // ئەگەر خشتەکان نەدۆزرانەوە، هەوڵبدە ڕاستەوخۆ خشتەی دیاریکراو وەربگرە (بۆ پاراستن)
-      console.warn('⚠️ No tables found via information_schema, trying fallback...');
-      // ئەم بەشە بۆ ئەگەری ئەوەیە کە داتابەیسەکە ڕێگە بە خوێندنەوەی schema نەدات
-      // بەم شێوەیە هیچ خشتەیەک وەرناگیرێت، بەڵام هەڵە نایەت
+      console.warn('⚠️ No tables found via RPC. Make sure get_public_tables() function exists in Supabase.');
     }
 
     // دروستکردنی ناوی فایل بە کاتی ڕاستەوخۆ
@@ -139,7 +132,6 @@ async function runBackup() {
     console.log('✅ Backup process completed successfully!');
   } catch (error) {
     console.error('💥 Unhandled error in runBackup:', error.message);
-    // هەر هەڵەیەک بێت، بە کۆدی 1 دەرنەچە، بەڵام ڕاپۆرت بکە
     process.exit(1);
   }
 }
@@ -158,12 +150,11 @@ function cleanupOldBackups() {
         path: path.join(BACKUP_DIR, f),
       }))
       .map((f) => {
-        // ناوی فایل: 2026-08-05_12-30-45.json
         const dateStr = f.name.split('.')[0].replace(/_/g, 'T').replace(/-/g, ':');
         const date = new Date(dateStr);
         return { ...f, date };
       })
-      .filter((f) => !isNaN(f.date.getTime())) // فایلەکانی ناوی کاتیان هەڵەیە لابدە
+      .filter((f) => !isNaN(f.date.getTime()))
       .sort((a, b) => a.date - b.date);
 
     const now = new Date();
@@ -181,7 +172,6 @@ function cleanupOldBackups() {
       }
     }
 
-    // بۆ هەر مانگێک، هەمووان بسڕەوە جگە لە دوایین دانە
     for (const month in monthGroups) {
       const group = monthGroups[month].sort((a, b) => a.date - b.date);
       for (let i = 0; i < group.length - 1; i++) {
@@ -189,7 +179,6 @@ function cleanupOldBackups() {
       }
     }
 
-    // سڕینەوە
     for (const filePath of toDelete) {
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
