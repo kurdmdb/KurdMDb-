@@ -4,5 +4,6 @@
       "source": "/sitemap.xml",
       "destination": "/api/sitemap"
     }
-  ]
+  ],
+  "ignoredBuildStep": "git diff --quiet HEAD^ HEAD -- . ':!backups' || exit 1"
 }
