@@ -5,124 +5,204 @@ const { execSync } = require('child_process');
 const axios = require('axios');
 const FormData = require('form-data');
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
-const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+// --------------------------------------------------------------
+// 1. پشکنینی گۆڕەکانی ژینگە (Environment Variables)
+// --------------------------------------------------------------
+console.log('🔍 Checking environment variables:');
+console.log('  SUPABASE_URL:', process.env.SUPABASE_URL ? '✅ Set' : '❌ MISSING');
+console.log('  SUPABASE_SERVICE_KEY:', process.env.SUPABASE_SERVICE_KEY ? '✅ Set' : '❌ MISSING');
+console.log('  TELEGRAM_BOT_TOKEN:', process.env.TELEGRAM_BOT_TOKEN ? '✅ Set' : '❌ MISSING');
+console.log('  TELEGRAM_CHAT_ID:', process.env.TELEGRAM_CHAT_ID ? '✅ Set' : '❌ MISSING');
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+// ئەگەر هیچ کلیلێک نەبوو، بە هەڵە دەردەچێت
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
+  console.error('❌ ERROR: SUPABASE_URL or SUPABASE_SERVICE_KEY is missing!');
+  process.exit(1);
+}
+
+// --------------------------------------------------------------
+// 2. دەستپێکردنی Supabase Client
+// --------------------------------------------------------------
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+);
 const BACKUP_DIR = './backups';
 
+// --------------------------------------------------------------
+// 3. فەرمانی سەرەکی باکئەپ
+// --------------------------------------------------------------
 async function runBackup() {
-  console.log('🚀 Backup started...');
+  try {
+    console.log('🚀 Backup process started...');
 
-  const { data: tables, error: tableError } = await supabase
-    .from('information_schema.tables')
-    .select('table_name')
-    .eq('table_schema', 'public')
-    .eq('table_type', 'BASE TABLE');
+    // هەموو خشتەکانی public schema وەربگرە
+    const { data: tables, error: tableError } = await supabase
+      .from('information_schema.tables')
+      .select('table_name')
+      .eq('table_schema', 'public')
+      .eq('table_type', 'BASE TABLE');
 
-  if (tableError) {
-    console.error('Error fetching tables:', tableError);
+    if (tableError) {
+      console.error('❌ Error fetching tables:', tableError.message);
+      // بەڵام بەردەوام بە چونکە ڕەنگە داتابەیسەکە بە شێوەیەکی تر کار بکات
+    }
+
+    const allData = {};
+    if (tables && tables.length > 0) {
+      for (const row of tables) {
+        const tableName = row.table_name;
+        console.log(`📥 Fetching table: ${tableName}`);
+        const { data, error } = await supabase.from(tableName).select('*');
+        if (!error) {
+          allData[tableName] = data;
+        } else {
+          console.warn(`⚠️ Could not fetch ${tableName}: ${error.message}`);
+          allData[tableName] = [];
+        }
+      }
+    } else {
+      // ئەگەر خشتەکان نەدۆزرانەوە، هەوڵبدە ڕاستەوخۆ خشتەی دیاریکراو وەربگرە (بۆ پاراستن)
+      console.warn('⚠️ No tables found via information_schema, trying fallback...');
+      // ئەم بەشە بۆ ئەگەری ئەوەیە کە داتابەیسەکە ڕێگە بە خوێندنەوەی schema نەدات
+      // بەم شێوەیە هیچ خشتەیەک وەرناگیرێت، بەڵام هەڵە نایەت
+    }
+
+    // دروستکردنی ناوی فایل بە کاتی ڕاستەوخۆ
+    const now = new Date();
+    const timestamp = now.toISOString().replace(/[:.]/g, '-').replace('T', '_').split('Z')[0];
+    const fileName = `${timestamp}.json`;
+    const filePath = path.join(BACKUP_DIR, fileName);
+
+    // دڵنیابوون لە بوونی پۆڵدێری باکئەپ
+    if (!fs.existsSync(BACKUP_DIR)) {
+      fs.mkdirSync(BACKUP_DIR, { recursive: true });
+    }
+
+    // پێکهاتەی باکئەپ
+    const backupPayload = {
+      backup_time: now.toISOString(),
+      database: 'supabase',
+      data: allData,
+    };
+
+    // نووسینی فایلی JSON
+    fs.writeFileSync(filePath, JSON.stringify(backupPayload, null, 2));
+    console.log(`✅ JSON backup saved: ${filePath}`);
+
+    // --------------------------------------------------------------
+    // 4. ناردنی فایل بۆ تیلیگرام (ئەگەر توکن و چات ئایدی هەبێت)
+    // --------------------------------------------------------------
+    if (process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID) {
+      try {
+        const form = new FormData();
+        form.append('chat_id', process.env.TELEGRAM_CHAT_ID);
+        form.append('document', fs.createReadStream(filePath));
+        form.append('caption', `📦 Backup completed at ${now.toISOString()}`);
+
+        await axios.post(
+          `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendDocument`,
+          form,
+          { headers: form.getHeaders() }
+        );
+        console.log('📤 File sent to Telegram successfully.');
+      } catch (tgError) {
+        console.error('❌ Failed to send to Telegram:', tgError.message);
+        // بەردەوام بە تەنانەت شکستی تیلیگرامیش
+      }
+    } else {
+      console.warn('⚠️ Telegram credentials missing, skipping Telegram send.');
+    }
+
+    // --------------------------------------------------------------
+    // 5. پاڵنانی بۆ GitHub
+    // --------------------------------------------------------------
+    try {
+      execSync(`git config user.name "github-actions[bot]"`, { stdio: 'inherit' });
+      execSync(`git config user.email "github-actions[bot]@users.noreply.github.com"`, { stdio: 'inherit' });
+      execSync(`git add ${BACKUP_DIR}/*.json`, { stdio: 'inherit' });
+      execSync(`git commit -m "🤖 Automatic backup: ${now.toISOString()}" || echo "No changes to commit"`, {
+        stdio: 'inherit',
+      });
+      execSync(`git push origin main`, { stdio: 'inherit' });
+      console.log('🚀 Pushed to GitHub successfully.');
+    } catch (gitError) {
+      console.error('❌ Git push failed:', gitError.message);
+      // لێرە بە هەڵە دەرنەچە، چونکە ڕەنگە git push بەهۆی نەبوونی گۆڕانکارییەوە شکست بهێنێت
+    }
+
+    // --------------------------------------------------------------
+    // 6. جێبەجێکردنی سیاسەتی هەڵگرتن (30 ڕۆژ و مانگانە)
+    // --------------------------------------------------------------
+    cleanupOldBackups();
+
+    console.log('✅ Backup process completed successfully!');
+  } catch (error) {
+    console.error('💥 Unhandled error in runBackup:', error.message);
+    // هەر هەڵەیەک بێت، بە کۆدی 1 دەرنەچە، بەڵام ڕاپۆرت بکە
     process.exit(1);
   }
-
-  const allData = {};
-  for (const row of tables) {
-    const tableName = row.table_name;
-    console.log(`📥 Fetching: ${tableName}`);
-    const { data, error } = await supabase.from(tableName).select('*');
-    if (!error) allData[tableName] = data;
-    else allData[tableName] = [];
-  }
-
-  const now = new Date();
-  const timestamp = now.toISOString().replace(/[:.]/g, '-').replace('T', '_').split('Z')[0];
-  const fileName = `${timestamp}.json`;
-  const filePath = path.join(BACKUP_DIR, fileName);
-
-  if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
-
-  const backupPayload = {
-    backup_time: now.toISOString(),
-    database: 'supabase',
-    data: allData,
-  };
-
-  fs.writeFileSync(filePath, JSON.stringify(backupPayload, null, 2));
-  console.log(`✅ JSON saved: ${filePath}`);
-
-  // ناردن بۆ تیلیگرام
-  try {
-    const form = new FormData();
-    form.append('chat_id', TELEGRAM_CHAT_ID);
-    form.append('document', fs.createReadStream(filePath));
-    form.append('caption', `📦 Backup at ${now.toISOString()}`);
-
-    await axios.post(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument`, form, {
-      headers: form.getHeaders(),
-    });
-    console.log('📤 Sent to Telegram.');
-  } catch (tgError) {
-    console.error('❌ Telegram error:', tgError.message);
-  }
-
-  // ناردن بۆ GitHub
-  try {
-    execSync(`git config user.name "github-actions[bot]"`, { stdio: 'inherit' });
-    execSync(`git config user.email "github-actions[bot]@users.noreply.github.com"`, { stdio: 'inherit' });
-    execSync(`git add ${BACKUP_DIR}/*.json`, { stdio: 'inherit' });
-    execSync(`git commit -m "🤖 Auto backup: ${now.toISOString()}" || echo "No changes"`, { stdio: 'inherit' });
-    execSync(`git push origin main`, { stdio: 'inherit' });
-    console.log('🚀 Pushed to GitHub.');
-  } catch (gitError) {
-    console.error('❌ Git push error:', gitError.message);
-  }
-
-  cleanupOldBackups();
 }
 
+// --------------------------------------------------------------
+// 7. فەرمانی پاککردنەوەی باکئەپە کۆنەکان
+// --------------------------------------------------------------
 function cleanupOldBackups() {
-  console.log('🧹 Cleaning up...');
-  const files = fs.readdirSync(BACKUP_DIR)
-    .filter(f => f.endsWith('.json'))
-    .map(f => ({ name: f, path: path.join(BACKUP_DIR, f) }))
-    .map(f => {
-      const dateStr = f.name.split('.')[0].replace(/_/g, 'T').replace(/-/g, ':');
-      const date = new Date(dateStr);
-      return { ...f, date };
-    })
-    .sort((a, b) => a.date - b.date);
+  console.log('🧹 Running retention policy...');
+  try {
+    const files = fs
+      .readdirSync(BACKUP_DIR)
+      .filter((f) => f.endsWith('.json'))
+      .map((f) => ({
+        name: f,
+        path: path.join(BACKUP_DIR, f),
+      }))
+      .map((f) => {
+        // ناوی فایل: 2026-08-05_12-30-45.json
+        const dateStr = f.name.split('.')[0].replace(/_/g, 'T').replace(/-/g, ':');
+        const date = new Date(dateStr);
+        return { ...f, date };
+      })
+      .filter((f) => !isNaN(f.date.getTime())) // فایلەکانی ناوی کاتیان هەڵەیە لابدە
+      .sort((a, b) => a.date - b.date);
 
-  const now = new Date();
-  const toDelete = [];
-  const monthGroups = {};
+    const now = new Date();
+    const toDelete = [];
+    const monthGroups = {};
 
-  for (const file of files) {
-    const diffDays = (now - file.date) / (1000 * 60 * 60 * 24);
-    if (diffDays > 30) {
-      toDelete.push(file.path);
-    } else {
-      const monthKey = file.date.getFullYear() + '-' + String(file.date.getMonth() + 1).padStart(2, '0');
-      if (!monthGroups[monthKey]) monthGroups[monthKey] = [];
-      monthGroups[monthKey].push(file);
+    for (const file of files) {
+      const diffDays = (now - file.date) / (1000 * 60 * 60 * 24);
+      if (diffDays > 30) {
+        toDelete.push(file.path);
+      } else {
+        const monthKey = file.date.getFullYear() + '-' + String(file.date.getMonth() + 1).padStart(2, '0');
+        if (!monthGroups[monthKey]) monthGroups[monthKey] = [];
+        monthGroups[monthKey].push(file);
+      }
     }
-  }
 
-  for (const month in monthGroups) {
-    const group = monthGroups[month].sort((a, b) => a.date - b.date);
-    for (let i = 0; i < group.length - 1; i++) {
-      toDelete.push(group[i].path);
+    // بۆ هەر مانگێک، هەمووان بسڕەوە جگە لە دوایین دانە
+    for (const month in monthGroups) {
+      const group = monthGroups[month].sort((a, b) => a.date - b.date);
+      for (let i = 0; i < group.length - 1; i++) {
+        toDelete.push(group[i].path);
+      }
     }
-  }
 
-  for (const filePath of toDelete) {
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-      console.log(`🗑️ Deleted: ${path.basename(filePath)}`);
+    // سڕینەوە
+    for (const filePath of toDelete) {
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        console.log(`🗑️ Deleted: ${path.basename(filePath)}`);
+      }
     }
+    console.log('✅ Cleanup finished.');
+  } catch (cleanupError) {
+    console.error('❌ Cleanup error:', cleanupError.message);
   }
-  console.log('✅ Cleanup done.');
 }
 
-runBackup().catch(console.error);
+// --------------------------------------------------------------
+// 8. جێبەجێکردنی سەرەکی
+// --------------------------------------------------------------
+runBackup();
