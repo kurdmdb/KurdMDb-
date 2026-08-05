@@ -27,6 +27,18 @@ const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY
 );
+
+// Debug: پشکنینی جۆری key (service_role یان anon)
+try {
+  const jwtPayload = JSON.parse(
+    Buffer.from(process.env.SUPABASE_SERVICE_KEY.split('.')[1], 'base64').toString()
+  );
+  console.log('🔑 JWT role:', jwtPayload.role);
+  console.log('🔑 JWT ref:', jwtPayload.ref);
+} catch (jwtError) {
+  console.warn('⚠️ Could not decode JWT for debug:', jwtError.message);
+}
+
 const BACKUP_DIR = './backups';
 
 // --------------------------------------------------------------
@@ -168,30 +180,4 @@ function cleanupOldBackups() {
       } else {
         const monthKey = file.date.getFullYear() + '-' + String(file.date.getMonth() + 1).padStart(2, '0');
         if (!monthGroups[monthKey]) monthGroups[monthKey] = [];
-        monthGroups[monthKey].push(file);
-      }
-    }
-
-    for (const month in monthGroups) {
-      const group = monthGroups[month].sort((a, b) => a.date - b.date);
-      for (let i = 0; i < group.length - 1; i++) {
-        toDelete.push(group[i].path);
-      }
-    }
-
-    for (const filePath of toDelete) {
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-        console.log(`🗑️ Deleted: ${path.basename(filePath)}`);
-      }
-    }
-    console.log('✅ Cleanup finished.');
-  } catch (cleanupError) {
-    console.error('❌ Cleanup error:', cleanupError.message);
-  }
-}
-
-// --------------------------------------------------------------
-// 8. جێبەجێکردنی سەرەکی
-// --------------------------------------------------------------
-runBackup();
+        monthGroups[monthKey].push(
