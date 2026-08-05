@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: |
           npm init -y
-          npm install @supabase/supabase-js axios form-data
+          npm install @supabase/supabase-js axios form-data ws
 
       - name: Run Backup Script
         env:
