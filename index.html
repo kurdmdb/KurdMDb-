@@ -6097,6 +6097,7 @@
                 allCollections = []; return allCollections; }
         }
 
+        // ─── FIX 1: fetchCollectionItems — select content_type ───
         async function fetchCollectionItems(collectionId) {
             try {
                 if (!supabaseInitialized) initSupabase();
@@ -6106,7 +6107,7 @@
                 if (cached) return cached;
                 const { data, error } = await supabaseClient
                     .from('collection_items')
-                    .select('content_id, display_order')
+                    .select('content_id, display_order, content_type')
                     .eq('collection_id', collectionId)
                     .order('display_order', { ascending: true });
                 if (error) { console.error('Collection items fetch error:', error); return []; }
@@ -6115,12 +6116,24 @@
             } catch (e) { console.error('Collection items fetch exception:', e); return []; }
         }
 
+        // ─── FIX 2: getContentByIds stays unchanged; add getContentByCollectionItems ───
         function getContentByIds(ids) {
             const all = [...allMoviesData, ...allAnimationsData];
             const map = {};
             ids.forEach(id => {
                 const item = all.find(c => c.id === id);
                 if (item) map[id] = item;
+            });
+            return map;
+        }
+
+        // New function: uses content_type to pick the correct data source
+        function getContentByCollectionItems(items) {
+            const map = {};
+            items.forEach(i => {
+                const source = (i.content_type || '').toLowerCase() === 'animation' ? allAnimationsData : allMoviesData;
+                const item = source.find(c => c.id === i.content_id);
+                if (item) map[i.content_id] = item;
             });
             return map;
         }
@@ -6273,7 +6286,8 @@
             if (!main) return;
 
             const items = await fetchCollectionItems(coll.id);
-            const contentMap = getContentByIds(items.map(i => i.content_id));
+            // ─── FIX 3: use getContentByCollectionItems instead of getContentByIds ───
+            const contentMap = getContentByCollectionItems(items);
             const orderedItems = items.map(i => ({ ...i, content: contentMap[i.content_id] })).filter(i => i.content);
 
             const cover = coll.cover_url || 'https://picsum.photos/seed/collection' + coll.id + '/1200/400';
@@ -6292,7 +6306,8 @@
                     const title = sanitizeText(content.title || 'Untitled');
                     const year = content.release_date ? new Date(content.release_date).getFullYear() : 'N/A';
                     const poster = content.poster_url || '';
-                    const type = content.type === 'Animation' ? 'animation' : 'movie';
+                    // ─── FIX 4: use case-insensitive type comparison ───
+                    const type = (content.type || '').toLowerCase() === 'animation' ? 'animation' : 'movie';
                     const slugId = content.slug || content.id;
                     const rating = content.rating || content.kurddb_rating || 0;
 
