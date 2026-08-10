@@ -18,6 +18,15 @@ class SecurityGuard {
     this.telegramApi = `https://api.telegram.org/bot${this.BOT_TOKEN}`;
   }
 
+  // ------------------- پاککردنەوەی دەق بۆ Telegram legacy Markdown -------------------
+  // Telegram-ی "Markdown" (V1) تەنها ئەم کاراکتەرانە تایبەتن: _ * ` [
+  // ئەگەر بێ‌کۆنترۆڵ لەناو دەقی دینامیکیدا (path, ip, reason, error message) دابنرێن،
+  // sendMessage بە 400 Bad Request "can't parse entities" شکێنراوە.
+  escapeMd(text) {
+    if (text === null || text === undefined) return '';
+    return String(text).replace(/([_*`[\]])/g, '\\$1');
+  }
+
   // ------------------- شیکردنەوەی لۆگەکان -------------------
   async analyzeLogs(timeWindowMinutes = 1) {
     const since = new Date(Date.now() - timeWindowMinutes * 60 * 1000).toISOString();
@@ -30,7 +39,10 @@ class SecurityGuard {
 
     if (error) {
       console.error('هەڵە لە کاتی خوێندنەوەی لۆگ:', error.message);
-      return null;
+      // پێشتر ئەمە null دەگەڕایەوە و runScheduledReport/runInstantAlert بێدەنگ کۆتایی دەهات
+      // بەبێ ناردنی هیچ ئاگاداریەک. ئێستا throw دەکەین تاکو هەڵەکە لە GitHub Actions logs
+      // دا دیار بێت و کاتیش وا بکات نامەیەکی fallback بنێردرێت (بڕوانە runScheduledReport).
+      throw new Error(`Supabase query failed (logs): ${error.message}`);
     }
 
     if (!logs || logs.length === 0) {
@@ -112,46 +124,48 @@ class SecurityGuard {
     const topPaths = Object.entries(stats.paths)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 3)
-      .map(([p, c]) => `  • ${p} : ${c} داواکاری`)
+      .map(([p, c]) => `  • ${this.escapeMd(p)} : ${c} داواکاری`)
       .join('\n');
+
+    const suspiciousIpsList = stats.suspiciousIps.map(ip => this.escapeMd(ip)).join('\n  • ');
 
     const message = `
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃   📢 **کوردMDb - چاودێری تەندروستی**  ┃
+┃   📢 *کوردMDb - چاودێری تەندروستی*  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-🕌 **بۆ سەرۆکی گەورەی کوردMDb، بەڕێز ئامێز،**
+🕌 *بۆ سەرۆکی گەورەی کوردMDb، بەڕێز ئامێز،*
 سڵاو و ڕێزی تایبەت. ئەمڕۆ لەم کاتە پیرۆزەدا،
 سیستەمی زیرەکی چاودێری سەلامەتی ڕاپۆرتی خوارەوە ئامادە کردووە.
 
 ────────────────────────────────
-📅 **ڕۆژ و کات:** ${dayOfWeek}، ${dateStr}
-🌐 **ماڵپەڕ:** ${this.WEBSITE_URL}
-📊 **دۆخی سەرەکی:** ${health.isOnline ? '🟢 ئۆنلاین و چالاک' : '🔴 ئۆفلاین (پێویستی بە چاودێری هەنگاوەکانە)'}
-⏱️ **کاتی وەڵامدانەوە:** ${health.responseTime} میلیچرکە
-📡 **کۆدی دۆخ:** ${health.statusCode}
+📅 *ڕۆژ و کات:* ${dayOfWeek}، ${this.escapeMd(dateStr)}
+🌐 *ماڵپەڕ:* ${this.escapeMd(this.WEBSITE_URL)}
+📊 *دۆخی سەرەکی:* ${health.isOnline ? '🟢 ئۆنلاین و چالاک' : '🔴 ئۆفلاین (پێویستی بە چاودێری هەنگاوەکانە)'}
+⏱️ *کاتی وەڵامدانەوە:* ${health.responseTime} میلیچرکە
+📡 *کۆدی دۆخ:* ${health.statusCode}
 
 ────────────────────────────────
-📈 **ئامارەکانی کۆتایی (١ خولەکی ڕابردوو):**
-• **کۆی گشتی داواکاری:** ${stats.total}
-• **ژمارەی هەڵەکان:** ${stats.errors} (${stats.errorRate.toFixed(2)}%)
-• **پلەی مەترسی:** ${riskLevel} ${riskEmoji}
+📈 *ئامارەکانی کۆتایی (١ خولەکی ڕابردوو):*
+• *کۆی گشتی داواکاری:* ${stats.total}
+• *ژمارەی هەڵەکان:* ${stats.errors} (${stats.errorRate.toFixed(2)}%)
+• *پلەی مەترسی:* ${riskLevel} ${riskEmoji}
 
-📋 **پڕداواکاریترین پەڕەکان:**
+📋 *پڕداواکاریترین پەڕەکان:*
 ${topPaths || '  • هیچ داواکارییەک تۆمار نەکراوە'}
 
-🌍 **پۆلێنی کۆدەکانی دۆخ (HTTP):**
+🌍 *پۆلێنی کۆدەکانی دۆخ (HTTP):*
 ${Object.entries(stats.statuses).map(([code, count]) => `  • ${code} : ${count} جار`).join('\n') || '  • هیچ'}
 
-${stats.suspiciousIps.length > 0 ? `🛡️ **ئاگاداری ئاسایش:** ئەم ئایپییانە هەڵەی گوماناویان هەیە:\n  • ${stats.suspiciousIps.join('\n  • ')}` : '✅ **هیچ هێرش یان چالاکییەکی گوماناوی نەدۆزراوەتەوە.**'}
+${stats.suspiciousIps.length > 0 ? `🛡️ *ئاگاداری ئاسایش:* ئەم ئایپییانە هەڵەی گوماناویان هەیە:\n  • ${suspiciousIpsList}` : '✅ *هیچ هێرش یان چالاکییەکی گوماناوی نەدۆزراوەتەوە.*'}
 
 ────────────────────────────────
-💎 **کورتە:** 
+💎 *کورتە:* 
 ماڵپەڕی کوردMDb لەم ساتەدا ${health.isOnline ? 'ساغ و بەهێزە' : 'ڕووبەڕووی کێشە بووەتەوە'}. سیستەمەکە بەردەوامە لە چاودێریکردن.
 
 ---
 *ئەم ڕاپۆرتە لەلایەن سکرێپتی چاودێری سەلامەتی کوردMDb -ەوە ئامادە کراوە و نێردراوە.*
-🌹 **سوپاس بۆ سەرپەرشتی و پشتیوانی بەڕێزیان.** 
+🌹 *سوپاس بۆ سەرپەرشتی و پشتیوانی بەڕێزیان.* 
     `.trim();
     return message;
   }
@@ -161,46 +175,59 @@ ${stats.suspiciousIps.length > 0 ? `🛡️ **ئاگاداری ئاسایش:** �
     const now = new Date();
     const dateStr = now.toLocaleString('ckb-IR', { timeZone: 'Asia/Tehran', hour12: false });
 
+    const suspiciousIpsInline = stats.suspiciousIps.length > 0
+      ? stats.suspiciousIps.map(ip => this.escapeMd(ip)).join(', ')
+      : 'هیچ نەدۆزرایەوە';
+
+    const topPaths = Object.entries(stats.paths)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([p, c]) => `  • ${this.escapeMd(p)} : ${c} داواکاری`)
+      .join('\n');
+
     const message = `
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃   🚨 **ئاگادارکردنەوەی فریاگوزاری سەلامەتی** 🚨 ┃
+┃   🚨 *ئاگادارکردنەوەی فریاگوزاری سەلامەتی* 🚨 ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-💢 **بە سەرۆکی کوردMDb، بەڕێز ئامێز،**
+💢 *بە سەرۆکی کوردMDb، بەڕێز ئامێز،*
 ئاگادارکردنەوەیەکی زۆر لە ڕادەبەدەر! سیستەمەکەمان چالاکییەکی نائاسایی دۆزیوەتەوە 
 کە دەتوانێت مەترسی لەسەر بەردەوامی ماڵپەڕەکە دروست بکات.
 
 ────────────────────────────────
-📌 **هۆکاری ئاگادارکردنەوە:** 
-${triggerReason}
+📌 *هۆکاری ئاگادارکردنەوە:* 
+${this.escapeMd(triggerReason)}
 
-⏰ **کاتی ڕوودان:** ${dateStr}
-🌐 **ماڵپەڕی مەبەست:** ${this.WEBSITE_URL}
-📊 **دۆخی ئێستای ماڵپەڕ:** ${health.isOnline ? '🟢 هێشتا ئۆنلاینە' : '🔴 کەوتووەتە خوارەوە یان خاوە'}
-
-────────────────────────────────
-📉 **ئامارەکانی ١ خولەکی کۆتایی (هۆکاری ئاگاداری):**
-• **کۆی داواکاری:** ${stats.total}
-• **ڕێژەی هەڵە:** ${stats.errors} لە کۆی ${stats.total} (${stats.errorRate.toFixed(2)}%)
-• **ئایپیە گوماناوەکان:** ${stats.suspiciousIps.length > 0 ? stats.suspiciousIps.join(', ') : 'هیچ نەدۆزرایەوە'}
-
-📋 **پەڕە بەرکارەکان (لەوانەیە ئامانجی هێرش بن):**
-${Object.entries(stats.paths).sort((a,b) => b[1] - a[1]).slice(0, 5).map(([p,c]) => `  • ${p} : ${c} داواکاری`).join('\n') || '  • دەستنیشان نەکراوە'}
+⏰ *کاتی ڕوودان:* ${this.escapeMd(dateStr)}
+🌐 *ماڵپەڕی مەبەست:* ${this.escapeMd(this.WEBSITE_URL)}
+📊 *دۆخی ئێستای ماڵپەڕ:* ${health.isOnline ? '🟢 هێشتا ئۆنلاینە' : '🔴 کەوتووەتە خوارەوە یان خاوە'}
 
 ────────────────────────────────
-⚡ **پێشنیاری خێرا:**
+📉 *ئامارەکانی ١ خولەکی کۆتایی (هۆکاری ئاگاداری):*
+• *کۆی داواکاری:* ${stats.total}
+• *ڕێژەی هەڵە:* ${stats.errors} لە کۆی ${stats.total} (${stats.errorRate.toFixed(2)}%)
+• *ئایپیە گوماناوەکان:* ${suspiciousIpsInline}
+
+📋 *پەڕە بەرکارەکان (لەوانەیە ئامانجی هێرش بن):*
+${topPaths || '  • دەستنیشان نەکراوە'}
+
+────────────────────────────────
+⚡ *پێشنیاری خێرا:*
 ١. سەیری لاگەکانی ڕاژەخۆر بکە بۆ بینینی ئایپیە تایبەتەکان.
 ٢. ئەگەر هێرشەکە بەردەوام بوو، ڕێگای سەلامەتی (Cloudflare یان WAF) چالاک بکە.
 ٣. تیمی تەکنیکی ئاگادار بکەرەوە بۆ ڕووبەڕووبوونەوەی خێرا.
 
 ---
 *ئەم نامە لە ڕێگەی سیستەمی فریاگوزاریی کوردMDb -ەوە ڕاستەوخۆ نێردراوە.*
-🔥 **هیوای سەلامەتی و بەهێزی بۆ ماڵپەڕەکەمان!**
+🔥 *هیوای سەلامەتی و بەهێزی بۆ ماڵپەڕەکەمان!*
     `.trim();
     return message;
   }
 
   // ------------------- ناردنی نامە -------------------
+  // ئەگەر Markdown هەر شکا (بۆ نموونە کاراکتەرێکی چاوەڕوان‌نەکراو تێپەڕی escaping بوو)،
+  // بەبێ parse_mode دووبارە هەوڵ دەدەینەوە وەکو دەقی سادە، تاکو بەلایەنی کەم ئاگاداریەکە بگات
+  // لە جیاتی ئەوەی بە تەواوی بفەوتێت.
   async sendMessage(text) {
     try {
       const response = await axios.post(`${this.telegramApi}/sendMessage`, {
@@ -210,8 +237,22 @@ ${Object.entries(stats.paths).sort((a,b) => b[1] - a[1]).slice(0, 5).map(([p,c])
       });
       return response.data.result.message_id;
     } catch (error) {
-      console.error('ناردنی نامە سەرنەکەوت:', error.message);
-      return null;
+      const apiDescription = error.response?.data?.description;
+      console.error('ناردنی نامە بە Markdown سەرنەکەوت:', apiDescription || error.message);
+
+      // fallback: هەمان دەق بەبێ parse_mode بنێرە (ئەستێرەکان وەک دەقی ئاسایی دەردەکەون،
+      // بەڵام لانیکەم نامەکە دەگات)
+      try {
+        const fallbackResponse = await axios.post(`${this.telegramApi}/sendMessage`, {
+          chat_id: this.CHAT_ID,
+          text: text,
+        });
+        console.warn('⚠️ نامە بەبێ Markdown formatting نێردرا (fallback).');
+        return fallbackResponse.data.result.message_id;
+      } catch (fallbackError) {
+        console.error('ناردنی fallback ـیش سەرنەکەوت:', fallbackError.response?.data?.description || fallbackError.message);
+        return null;
+      }
     }
   }
 
@@ -290,10 +331,23 @@ ${Object.entries(stats.paths).sort((a,b) => b[1] - a[1]).slice(0, 5).map(([p,c])
   async runScheduledReport() {
     console.log('📡 دەستپێکردنی ڕاپۆرتی خولەکی...');
     const health = await this.checkWebsiteHealth();
-    const stats = await this.analyzeLogs(1);
+    let stats;
+    try {
+      stats = await this.analyzeLogs(1);
+    } catch (error) {
+      // پێشتر: analyzeLogs لە کاتی هەڵەی Supabase دا بێدەنگ null دەگەڕایەوە و runScheduledReport
+      // بەبێ ناردنی هیچ نامەیەک کۆتایی دەهات. ئێستا بەلایەنی کەم ئاگاداریەکی خێرا دەنێرین
+      // تاکو بزانیت مۆنیتەرینگەکە خۆی شکاوە.
+      console.error('❌ analyzeLogs شکا:', error.message);
+      await this.sendMessage(`⚠️ *ڕاپۆرتی چاودێری سەرنەکەوت*\nهەڵە لە خوێندنەوەی لۆگەکانی Supabase: ${this.escapeMd(error.message)}`);
+      return;
+    }
     if (!stats) return;
     const msg = this.buildExquisiteReport(stats, health);
     const msgId = await this.sendMessage(msg);
+    if (!msgId) {
+      console.error('❌ نامەی ڕاپۆرت بە تەواوی نەنێردرا (نە Markdown و نە fallback).');
+    }
     await this.saveMessageId(msgId);
     await this.deleteOldMessages();
     console.log('✅ ڕاپۆرت تەواو بوو.');
@@ -302,15 +356,25 @@ ${Object.entries(stats.paths).sort((a,b) => b[1] - a[1]).slice(0, 5).map(([p,c])
   async runInstantAlert(triggerReason = 'دەستی پاچکرا لەلایەن ڕاژەخۆرەوە (مەترسی دۆزرایەوە)') {
     console.log('🚨 دەستپێکردنی ئاگاداری فریاگوزاری...');
     const health = await this.checkWebsiteHealth();
-    const stats = await this.analyzeLogs(1);
-    if (!stats) return;
-    
+    let stats;
+    try {
+      stats = await this.analyzeLogs(1);
+    } catch (error) {
+      console.error('❌ analyzeLogs شکا:', error.message);
+      await this.sendMessage(`⚠️ *ئاگاداری فریاگوزاری سەرنەکەوت*\nهەڵە لە خوێندنەوەی لۆگەکانی Supabase: ${this.escapeMd(error.message)}`);
+      return false;
+    }
+    if (!stats) return false;
+
     if (stats.suspiciousIps && stats.suspiciousIps.length > 0) {
       await this.autoBlockSuspiciousIps(stats);
     }
 
     const msg = this.buildExquisiteAlert(stats, health, triggerReason);
     const msgId = await this.sendMessage(msg);
+    if (!msgId) {
+      console.error('❌ نامەی ئاگاداری بە تەواوی نەنێردرا (نە Markdown و نە fallback).');
+    }
     await this.saveMessageId(msgId);
     console.log('✅ ئاگاداری فریاگوزاری نێردرا و ئایپە گوماناوەکان بلۆک کران.');
     return true;
