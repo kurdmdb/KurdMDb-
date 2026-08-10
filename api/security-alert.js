@@ -1,7 +1,7 @@
 // api/security-alert.js
-const SecurityGuard = require('../scripts/guard-core');
+import SecurityGuard from '../scripts/guard-core.js';
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   if (req.method !== 'POST' && req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -28,4 +28,4 @@ module.exports = async (req, res) => {
       error: 'ئاگادارییەکە نەنێردرا، تکایە دواتر هەوڵبدەرەوە.'
     });
   }
-};
+}
