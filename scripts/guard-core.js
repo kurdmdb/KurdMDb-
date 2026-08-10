@@ -1,6 +1,6 @@
 // scripts/guard-core.js
-const axios = require('axios');
-const { createClient } = require('@supabase/supabase-js');
+import axios from 'axios';
+import { createClient } from '@supabase/supabase-js';
 
 class SecurityGuard {
   constructor() {
@@ -18,14 +18,12 @@ class SecurityGuard {
     this.telegramApi = `https://api.telegram.org/bot${this.BOT_TOKEN}`;
   }
 
-  // ------------------- شیکردنەوەی لۆگەکان (دەتوانیت ناوی خشتە و ستوونەکان بگۆڕیت) -------------------
+  // ------------------- شیکردنەوەی لۆگەکان -------------------
   async analyzeLogs(timeWindowMinutes = 1) {
     const since = new Date(Date.now() - timeWindowMinutes * 60 * 1000).toISOString();
 
-    // گریمانە خشتەکەت پێکهاتووە لە: created_at, status_code, path, method, error_message, ip
-    // تکایە ئەگەر ناوی ستوونەکان جیاوازە، لێرە بگۆڕە
     const { data: logs, error } = await this.supabase
-      .from('logs') // ناوی خشتەی لۆگەکان
+      .from('logs')
       .select('*')
       .gte('created_at', since)
       .order('created_at', { ascending: false });
@@ -51,18 +49,15 @@ class SecurityGuard {
       statuses[status] = (statuses[status] || 0) + 1;
       const path = row.path || '/';
       paths[path] = (paths[path] || 0) + 1;
-      // دیاریکردنی هێرشی SQLi / XSS
       if (row.error_message && (row.error_message.includes('SQL') || row.error_message.includes('script') || row.error_message.includes('exec'))) {
         if (row.ip) suspiciousIps.add(row.ip);
       }
-      // ئەگەر داواکاری زۆر لە خولەکدا لە یەک ئایپەوە (لێرە دەتوانیت زیاد بکەیت)
     });
 
-    // زیادکردنی ئایپەکانی کە زیاتر لە ١٠ داواکارییان لە خولەکدا هەیە (دەتوانیت ژمارەکە بگۆڕیت)
     const ipCounts = {};
     logs.forEach(row => { if (row.ip) ipCounts[row.ip] = (ipCounts[row.ip] || 0) + 1; });
     for (const [ip, count] of Object.entries(ipCounts)) {
-      if (count > 10) suspiciousIps.add(ip); // زیاتر لە ١٠ داواکاری لە خولەکدا گوماناوە
+      if (count > 10) suspiciousIps.add(ip);
     }
 
     return {
@@ -103,7 +98,7 @@ class SecurityGuard {
     return { isOnline, statusText, statusCode, responseTime };
   }
 
-  // ------------------- دروستکردنی ڕاپۆرتی نایاب (خولەکی) -------------------
+  // ------------------- دروستکردنی ڕاپۆرتی نایاب -------------------
   buildExquisiteReport(stats, health) {
     const now = new Date();
     const dateStr = now.toLocaleString('ckb-IR', { timeZone: 'Asia/Tehran', hour12: false });
@@ -161,7 +156,7 @@ ${stats.suspiciousIps.length > 0 ? `🛡️ **ئاگاداری ئاسایش:** �
     return message;
   }
 
-  // ------------------- دروستکردنی نامەی فریاگوزاری (هێرش) -------------------
+  // ------------------- دروستکردنی نامەی فریاگوزاری -------------------
   buildExquisiteAlert(stats, health, triggerReason) {
     const now = new Date();
     const dateStr = now.toLocaleString('ckb-IR', { timeZone: 'Asia/Tehran', hour12: false });
@@ -205,7 +200,7 @@ ${Object.entries(stats.paths).sort((a,b) => b[1] - a[1]).slice(0, 5).map(([p,c])
     return message;
   }
 
-  // ------------------- ناردنی نامە بۆ تیلیگرام -------------------
+  // ------------------- ناردنی نامە -------------------
   async sendMessage(text) {
     try {
       const response = await axios.post(`${this.telegramApi}/sendMessage`, {
@@ -220,7 +215,7 @@ ${Object.entries(stats.paths).sort((a,b) => b[1] - a[1]).slice(0, 5).map(([p,c])
     }
   }
 
-  // ------------------- سڕینەوەی نامە کۆنەکان (زیاتر لە ٣٠ ڕۆژ) -------------------
+  // ------------------- سڕینەوەی نامە کۆنەکان -------------------
   async deleteOldMessages() {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -252,7 +247,7 @@ ${Object.entries(stats.paths).sort((a,b) => b[1] - a[1]).slice(0, 5).map(([p,c])
     ]);
   }
 
-  // =================== کارەکانی بلۆککردنی ئایپ ===================
+  // =================== بلۆککردنی ئایپ ===================
   async blockIp(ipAddress, reason = 'هێرش یان داواکاریی زۆر') {
     if (!ipAddress) return false;
     try {
@@ -310,7 +305,6 @@ ${Object.entries(stats.paths).sort((a,b) => b[1] - a[1]).slice(0, 5).map(([p,c])
     const stats = await this.analyzeLogs(1);
     if (!stats) return;
     
-    // خۆکارانە بلۆککردنی ئایپە گوماناوەکان
     if (stats.suspiciousIps && stats.suspiciousIps.length > 0) {
       await this.autoBlockSuspiciousIps(stats);
     }
@@ -323,4 +317,4 @@ ${Object.entries(stats.paths).sort((a,b) => b[1] - a[1]).slice(0, 5).map(([p,c])
   }
 }
 
-module.exports = SecurityGuard;
+export default SecurityGuard;
