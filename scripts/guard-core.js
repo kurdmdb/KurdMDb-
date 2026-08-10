@@ -32,7 +32,7 @@ class SecurityGuard {
     const since = new Date(Date.now() - timeWindowMinutes * 60 * 1000).toISOString();
 
     const { data: logs, error } = await this.supabase
-      .from('logs')
+      .from('log')
       .select('*')
       .gte('created_at', since)
       .order('created_at', { ascending: false });
