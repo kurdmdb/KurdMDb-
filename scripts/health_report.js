@@ -1,5 +1,5 @@
 // scripts/health_report.js
-const SecurityGuard = require('./guard-core');
+import SecurityGuard from './guard-core.js';
 
 (async () => {
   try {
