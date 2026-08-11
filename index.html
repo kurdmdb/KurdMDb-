@@ -10,6 +10,9 @@
     <title>KurdMDb | زانیاری فیلم و ئەنیمە</title>
     <meta name="description" content="پلاتفۆرمێکی بینایی پێشکەوتوو بۆ دۆزینەوی فیلم و ئەنیمەیشن." />
     <link rel="canonical" href="https://kurdmdb.vercel.app/" />
+    <!-- Favicon -->
+    <link rel="icon" href="https://cdn.phototourl.com/free/2026-08-10-68237aee-ff60-43d4-921c-4319beba35cb.png" type="image/png" />
+    <link rel="shortcut icon" href="https://cdn.phototourl.com/free/2026-08-10-68237aee-ff60-43d4-921c-4319beba35cb.png" type="image/png" />
 
     <meta property="og:title" content="KurdMDb | زانیاری فیلم و ئەنیمەیشن" />
     <meta property="og:description" content="پلاتفۆرمێکی پێشکەوتوو بۆ دۆزینەوی فیلم و ئەنیمەیشن." />
@@ -49,15 +52,15 @@
         }
     </script>
 
-    <!-- ===== LIBS ===== -->
+    <!-- ===== LIBS (with defer) ===== -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
-    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js">
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js" defer>
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js">
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js" defer>
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/ScrollTrigger.min.js">
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/ScrollTrigger.min.js" defer>
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer>
     </script>
 
     <!-- ===== GA ===== -->
@@ -313,6 +316,8 @@
             filter: drop-shadow(0 8px 30px rgba(0, 0, 0, 0.7));
             cursor: pointer;
             transition: transform 0.4s ease;
+            /* قەبارەی لۆگۆ لەسەر هەموو ئامێرەکان یەکسان */
+            height: min(120px, 15vw);
         }
         .hero-logo img:hover {
             transform: scale(1.05);
@@ -1249,26 +1254,6 @@
             height: 100%;
             object-fit: cover;
         }
-        .like-btn {
-            background: transparent;
-            border: none;
-            color: rgba(255, 255, 255, 0.5);
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 0.85rem;
-            transition: 0.2s;
-            padding: 4px 8px;
-            border-radius: 20px;
-        }
-        .like-btn:hover {
-            color: #e74c3c;
-            background: rgba(231, 76, 60, 0.1);
-        }
-        .like-btn.liked {
-            color: #e74c3c;
-        }
 
         .bottom-nav {
             position: fixed;
@@ -1535,8 +1520,7 @@
             border: 4px solid rgba(139, 92, 246, 0.5);
             box-shadow: 0 0 30px rgba(99, 102, 241, 0.4);
             overflow: hidden;
-            cursor: pointer;
-            position: relative;
+            cursor: default;
             margin: 0 auto;
         }
         .profile-avatar-lg img {
@@ -1546,13 +1530,6 @@
             position: absolute;
             top: 0;
             left: 0;
-        }
-        .file-input-overlay {
-            position: absolute;
-            inset: 0;
-            opacity: 0;
-            cursor: pointer;
-            z-index: 10;
         }
 
         .filter-select {
@@ -2276,7 +2253,7 @@
                 padding: 10px 16px !important;
             }
             .hero-logo img {
-                height: 80px !important;
+                height: min(80px, 12vw) !important;
             }
             .grid-cols-2.md\:grid-cols-3 {
                 grid-template-columns: repeat(2, 1fr);
@@ -2321,7 +2298,7 @@
                 gap: 6px;
             }
             .hero-logo img {
-                height: 60px !important;
+                height: min(60px, 10vw) !important;
             }
             .grid-cols-2 {
                 grid-template-columns: 1fr 1fr;
@@ -3154,8 +3131,7 @@
         <div class="movie-bg" id="movieBg"></div>
         <header class="absolute top-0 left-0 w-full z-50 flex items-center justify-between p-4 md:p-6">
             <div>
-                <!-- FIX: use history.back() to go back, not home -->
-                <button class="header-icon-btn" onclick="window.history.back()" aria-label="Back">
+                <button class="header-icon-btn" onclick="goBack()" aria-label="Back">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="15 18 9 12 15 6" />
                     </svg>
@@ -3477,7 +3453,7 @@
     ================================================================ -->
     <script>
         /* ================================================================
-           KURDMDb — Full Application with Security & Performance Fixes
+           KURDMDb — Full Application with all fixes (Collections, Top250, Logging, Security, Performance, Back Button)
            ================================================================ */
 
         // ─── CONFIGURATION ──────────────────────────────────────────────
@@ -3485,9 +3461,59 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5eHVrbG96d2ducnp2ZWlzdm9mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4ODY2MjAsImV4cCI6MjA5NzQ2MjYyMH0.liuaBRrdk2ChCqgbl0NGB33IShFJmb-qUlla7s0Cnxg';
         const SITE_URL = 'https://kurdmdb.vercel.app';
 
+        // ─── LOGGING SYSTEM ─────────────────────────────────────────────
+        /**
+         * Log an action to the 'log' table.
+         * Requires table 'log' with columns: id, user_id, action, table_name, record_id, description, ip_address, created_at
+         */
+        async function logAction(userId, action, tableName, recordId, description, ipAddress) {
+            try {
+                if (!supabaseInitialized) initSupabase();
+                if (!supabaseClient) return;
+                if (!userId) return;
+                const ip = ipAddress || await getClientIP();
+                const payload = {
+                    user_id: userId,
+                    action: action,
+                    table_name: tableName || null,
+                    record_id: recordId || null,
+                    description: description || null,
+                    ip_address: ip || null,
+                    created_at: new Date().toISOString()
+                };
+                const { data, error } = await supabaseClient.from('log').insert(payload);
+                if (error) {
+                    console.warn('Log insert error:', error);
+                    // Fallback: try without ip_address if that fails
+                    if (error.message && error.message.includes('ip_address')) {
+                        const { error: fallbackErr } = await supabaseClient.from('log').insert({
+                            user_id: userId,
+                            action: action,
+                            table_name: tableName || null,
+                            record_id: recordId || null,
+                            description: description || null,
+                            created_at: new Date().toISOString()
+                        });
+                        if (fallbackErr) console.warn('Log fallback error:', fallbackErr);
+                    }
+                }
+            } catch (e) {
+                console.warn('Logging failed:', e);
+            }
+        }
+
+        // helper to get client IP (best effort)
+        async function getClientIP() {
+            try {
+                const res = await fetch('https://api.ipify.org?format=json');
+                const data = await res.json();
+                return data.ip || null;
+            } catch (_) { return null; }
+        }
+
         // ─── SIMPLE IN-MEMORY CACHE ──────────────────────────────────
         const cache = new Map();
-        const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+        const CACHE_TTL = 3 * 60 * 1000; // 3 minutes (reduced for freshness)
 
         function cacheGet(key) {
             const entry = cache.get(key);
@@ -3507,7 +3533,7 @@
             cache.clear();
         }
 
-        // ─── XSS SANITIZATION ──────────────────────────────────────────
+        // ─── XSS SANITIZATION (enhanced) ──────────────────────────────
         function sanitizeText(text) {
             if (!text) return '';
             const map = {
@@ -3517,12 +3543,26 @@
                 '"': '&quot;',
                 "'": '&#x27;',
                 '/': '&#x2F;',
+                '`': '&#x60;',
+                '=': '&#x3D;'
             };
-            return String(text).replace(/[&<>"'/]/g, function(s) {
+            return String(text).replace(/[&<>"'/`=]/g, function(s) {
                 return map[s];
             });
         }
 
+        // sanitize URL (prevent javascript: etc)
+        function sanitizeUrl(url) {
+            if (!url) return '#';
+            const s = String(url).trim();
+            const lower = s.toLowerCase();
+            if (lower.startsWith('javascript:') || lower.startsWith('data:') || lower.startsWith('vbscript:')) {
+                return '#';
+            }
+            return sanitizeText(s);
+        }
+
+        // safe text for innerHTML
         function safeText(text) {
             return sanitizeText(text);
         }
@@ -3576,7 +3616,7 @@
             if (!el) { el = document.createElement('link');
                 el.setAttribute('rel', 'canonical');
                 document.head.appendChild(el); }
-            el.setAttribute('href', url);
+            el.setAttribute('href', sanitizeUrl(url));
         }
 
         function setHomeMeta() {
@@ -3669,6 +3709,20 @@
             return `/${type}/${slug}`;
         }
 
+        // ─── BACK BUTTON (FIXED) ────────────────────────────────────────
+        function goBack() {
+            // If there is a history entry (referrer is from same site or history length > 1), go back
+            if (window.history.length > 1 && document.referrer && document.referrer.includes(window.location.hostname)) {
+                window.history.back();
+            } else if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                goHome();
+            }
+        }
+        window.goBack = goBack;
+
+        // ─── SHOW DETAIL (with logging) ───────────────────────────────
         window.showDetail = function(idOrSlug, type) {
             const all = [...allMoviesData, ...allAnimationsData];
             let item = null;
@@ -3689,6 +3743,10 @@
             renderDetail(item);
             trackPageView(path);
             trackGA('view_item', { content_id: item.id, content_type: item.type });
+            // Log view
+            if (currentUser && currentUser.id) {
+                logAction(currentUser.id, 'VIEW', item.type || 'content', String(item.id), `Viewed ${item.title}`);
+            }
         };
 
         function showDetailBySlug(slug, type) {
@@ -3703,40 +3761,58 @@
             renderDetail(item);
             trackPageView(path);
             trackGA('view_item', { content_id: item.id, content_type: item.type });
+            if (currentUser && currentUser.id) {
+                logAction(currentUser.id, 'VIEW', item.type || 'content', String(item.id), `Viewed ${item.title}`);
+            }
         }
 
         // ─── TOP 250 ──────────────────────────────────────────────────
-        let top250Ids = [];
+        let top250Ranks = {};
+
+        function top250Key(id, type) {
+            return id + '|' + (type || '').toLowerCase();
+        }
 
         async function fetchTop250() {
             try {
                 if (!supabaseInitialized) initSupabase();
                 if (!supabaseClient) {
-                    top250Ids = [];
-                    return top250Ids;
+                    top250Ranks = {};
+                    return top250Ranks;
                 }
                 const cached = cacheGet('top250');
-                if (cached) { top250Ids = cached; return top250Ids; }
+                if (cached) {
+                    top250Ranks = cached;
+                    return top250Ranks;
+                }
                 const { data, error } = await supabaseClient
                     .from('top250')
-                    .select('content_id')
+                    .select('content_id, content_type, rank')
                     .order('rank', { ascending: true });
                 if (error) throw error;
-                top250Ids = (data || []).map(item => item.content_id);
-                cacheSet('top250', top250Ids);
-                return top250Ids;
+                const map = {};
+                (data || []).forEach(item => {
+                    const key = top250Key(item.content_id, item.content_type);
+                    map[key] = item.rank;
+                });
+                top250Ranks = map;
+                cacheSet('top250', map);
+                return top250Ranks;
             } catch (e) {
                 console.warn('Top 250 fetch error:', e);
-                top250Ids = [];
-                return top250Ids;
+                top250Ranks = {};
+                return top250Ranks;
             }
         }
 
-        function isTop250(item) { return top250Ids.includes(item.id); }
+        function isTop250(item) {
+            const key = top250Key(item.id, item.type);
+            return Object.prototype.hasOwnProperty.call(top250Ranks, key);
+        }
 
         function getTop250Rank(item) {
-            const idx = top250Ids.indexOf(item.id);
-            return idx !== -1 ? idx + 1 : null;
+            const key = top250Key(item.id, item.type);
+            return Object.prototype.hasOwnProperty.call(top250Ranks, key) ? top250Ranks[key] : null;
         }
 
         // ─── SCROLL LOCK SYSTEM ──────────────────────────────────────────
@@ -3802,13 +3878,116 @@
             return rangeWithDots;
         }
 
-        // ─── RENDER DETAIL (with XSS protection) ──────────────────────
-        function renderDetail(item) {
+        // ─── RATE LIMITING (daily per user) ───────────────────────────
+        async function checkAndIncrementLimit(userId, actionType, maxPerDay) {
+            if (!userId) return { allowed: false, reason: 'User not authenticated' };
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const { data, error } = await supabaseClient
+                    .from('daily_limits')
+                    .select('id, count')
+                    .eq('user_id', userId)
+                    .eq('action_type', actionType)
+                    .eq('date', today)
+                    .maybeSingle();
+
+                if (error) throw error;
+                if (!data) {
+                    const { error: insertErr } = await supabaseClient
+                        .from('daily_limits')
+                        .insert({
+                            user_id: userId,
+                            action_type: actionType,
+                            count: 1,
+                            date: today
+                        });
+                    if (insertErr) throw insertErr;
+                    return { allowed: true, count: 1 };
+                }
+                if (data.count >= maxPerDay) {
+                    return { allowed: false, reason: `Daily limit reached for ${actionType}` };
+                }
+                const { error: updateErr } = await supabaseClient
+                    .from('daily_limits')
+                    .update({ count: data.count + 1 })
+                    .eq('id', data.id);
+                if (updateErr) throw updateErr;
+                return { allowed: true, count: data.count + 1 };
+            } catch (e) {
+                console.warn('Rate limit check failed:', e);
+                return { allowed: true };
+            }
+        }
+
+        // ─── SIGNUP RATE LIMIT (per IP, max 2 per day) ──────────────
+        async function checkSignupLimit(ip) {
+            if (!ip) return { allowed: true };
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const { data, error } = await supabaseClient
+                    .from('signup_limits')
+                    .select('id, count')
+                    .eq('ip_address', ip)
+                    .eq('date', today)
+                    .maybeSingle();
+                if (error) throw error;
+                if (!data) {
+                    await supabaseClient
+                        .from('signup_limits')
+                        .insert({ ip_address: ip, count: 1, date: today });
+                    return { allowed: true };
+                }
+                if (data.count >= 2) {
+                    return { allowed: false, reason: 'Only 2 accounts per day allowed from this IP.' };
+                }
+                await supabaseClient
+                    .from('signup_limits')
+                    .update({ count: data.count + 1 })
+                    .eq('id', data.id);
+                return { allowed: true };
+            } catch (e) {
+                console.warn('Signup limit check failed:', e);
+                return { allowed: true };
+            }
+        }
+
+        // ─── CHECK IF USER HAS WATCHED CONTENT ──────────────────────
+        async function hasWatched(userId, contentId) {
+            if (!userId || !contentId) return false;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('watched')
+                    .select('id')
+                    .eq('user_id', userId)
+                    .eq('content_id', contentId)
+                    .maybeSingle();
+                if (error) throw error;
+                return !!data;
+            } catch (e) {
+                console.warn('hasWatched check error:', e);
+                return false;
+            }
+        }
+
+        // ─── RENDER DETAIL (with enhanced logging and security) ──────
+        async function renderDetail(item) {
             closeAllOverlays();
 
             const type = (item.type || 'Movie').toLowerCase();
             const id = item.id;
-            incrementView(id, type);
+
+            // Rate limit view
+            if (currentUser && currentUser.id) {
+                const viewLimit = await checkAndIncrementLimit(currentUser.id, 'view', 2);
+                if (viewLimit.allowed) {
+                    incrementView(id, type);
+                } else {
+                    console.warn('Daily view limit reached for user:', currentUser.id);
+                }
+            } else {
+                incrementView(id, type);
+            }
+
             const main = document.getElementById('detailMain');
             const bg = document.getElementById('movieBg');
             if (!main || !bg) return;
@@ -3843,11 +4022,9 @@
             const hasKurdishSubtitle = item.has_kurdish_subtitle || false;
             const photos = item.photos || [];
             let userRating = null;
-            let isInWatchlist = false;
-            let isWatched = false;
             let avgRating = rating;
 
-            bg.style.backgroundImage = `url('${backdrop}')`;
+            bg.style.backgroundImage = `url('${sanitizeUrl(backdrop)}')`;
 
             const top250Rank = getTop250Rank(item);
             const isTop = top250Rank !== null;
@@ -3869,8 +4046,8 @@
                 let sitesHtml = '';
                 if (sitesToShow.length > 0) {
                     sitesHtml = sitesToShow.map(site => `
-                            <a href="${sanitizeText(site.url || '#')}" target="_blank" class="site-badge inline-flex items-center gap-2 transition hover:bg-white/10 rounded-full px-3 py-1">
-                                ${site.logo_url ? `<img src="${sanitizeText(site.logo_url)}" alt="${sanitizeText(site.name)}" style="height:50px;width:auto;object-fit:contain;" onerror="this.style.display='none'" />` : ''}
+                            <a href="${sanitizeUrl(site.url || '#')}" target="_blank" class="site-badge inline-flex items-center gap-2 transition hover:bg-white/10 rounded-full px-3 py-1">
+                                ${site.logo_url ? `<img src="${sanitizeUrl(site.logo_url)}" alt="${sanitizeText(site.name)}" style="height:50px;width:auto;object-fit:contain;" onerror="this.style.display='none'" />` : ''}
                                 <span class="text-white/80 text-sm">${sanitizeText(site.name)}</span>
                             </a>
                         `).join('');
@@ -3879,7 +4056,7 @@
                 }
                 subtitleBadge = `
                         <div class="subtitle-badge mt-4 flex flex-wrap items-center gap-2">
-                            <img src="${sanitizeText(websiteSettings.logo_url || 'https://i.ibb.co/8L8vGMy5/IMG-7953.png')}" alt="KurdMDb" style="height:28px;width:auto;" />
+                            <img src="${sanitizeUrl(websiteSettings.logo_url || 'https://i.ibb.co/8L8vGMy5/IMG-7953.png')}" alt="KurdMDb" style="height:28px;width:auto;" />
                             <span>ئەم بەرهەمە بە ژێرنووسی کوردی لەم وێبسایتانە بەردەستە:</span>
                             ${sitesHtml}
                         </div>
@@ -3895,8 +4072,8 @@
                                 <h2 class="text-xl font-semibold mb-6 text-purple-200">وێنەکان</h2>
                                 <div class="photos-grid">
                                     ${photos.map((p, idx) => `
-                                        <div class="photo-item" data-src="${sanitizeText(p)}">
-                                            <img src="${sanitizeText(p)}" alt="${safeTitle} - ${idx+1}" loading="lazy" onerror="this.style.display='none'" />
+                                        <div class="photo-item" data-src="${sanitizeUrl(p)}">
+                                            <img src="${sanitizeUrl(p)}" alt="${safeTitle} - ${idx+1}" loading="lazy" onerror="this.style.display='none'" />
                                         </div>
                                     `).join('')}
                                 </div>
@@ -3924,8 +4101,9 @@
             const iconEye =
                 `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
 
+            // Collections mapping
+            const collsForContent = window.contentCollectionsMap ? (window.contentCollectionsMap[top250Key(item.id, item.type)] || []) : [];
             let collectionAlertHTML = '';
-            const collsForContent = window.contentCollectionsMap ? (window.contentCollectionsMap[item.id] || []) : [];
             if (collsForContent.length > 0) {
                 const badgeLinks = collsForContent.map(c => `
                         <span class="coll-badge-sm" onclick="showCollectionDetail('${sanitizeText(c.slug)}')">
@@ -3948,7 +4126,7 @@
             }
 
             const posterHTML = poster ?
-                `<div class="detail-poster-wrapper"><img src="${sanitizeText(poster)}" alt="${safeTitle} - پۆستەر" class="w-full h-auto rounded-2xl shadow-2xl border border-white/10 transition-transform duration-500 hover:scale-105" onerror="this.style.display='none'" /></div>` :
+                `<div class="detail-poster-wrapper"><img src="${sanitizeUrl(poster)}" alt="${safeTitle} - پۆستەر" class="w-full h-auto rounded-2xl shadow-2xl border border-white/10 transition-transform duration-500 hover:scale-105" onerror="this.style.display='none'" /></div>` :
                 '<div class="w-full aspect-[2/3] bg-gray-800 rounded-2xl flex items-center justify-center text-white/20">No Poster</div>';
 
             let detailHTML = `
@@ -3981,14 +4159,14 @@
                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                                         </svg>
-                                        <span id="watchlistText">${isInWatchlist ? 'لە پێڕستی بینیندا' : 'زیادکردن بۆ پێڕستی بینین'}</span>
+                                        <span id="watchlistText">زیادکردن بۆ پێڕستی بینین</span>
                                     </button>
                                     <button class="btn-secondary" onclick="handleWatched(${item.id}, '${sanitizeText(type)}')">
                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                                             <circle cx="12" cy="12" r="3" />
                                         </svg>
-                                        <span>${isWatched ? 'بینراو' : 'بینیم'}</span>
+                                        <span>بینیم</span>
                                     </button>
                                     <div class="flex items-center gap-2 text-white/50 text-sm">
                                         ${iconEye}
@@ -4024,7 +4202,7 @@
                         <div class="glass-panel p-6 md:p-8 text-center">
                             <h2 class="text-xl font-semibold mb-8 text-purple-200">پلەکان</h2>
                             <div class="kurddb-badge-large justify-center mb-8">
-                                <img src="${sanitizeText(websiteSettings.logo_url || 'https://i.ibb.co/8L8vGMy5/IMG-7953.png')}" alt="KurdMDb" />
+                                <img src="${sanitizeUrl(websiteSettings.logo_url || 'https://i.ibb.co/8L8vGMy5/IMG-7953.png')}" alt="KurdMDb" />
                                 <span class="kurddb-rating-number" id="kurddbRating">${typeof avgRating === 'number' ? avgRating.toFixed(1) : '0.0'}</span>
                             </div>
                             <div class="flex flex-wrap justify-center items-center gap-6 text-sm">
@@ -4075,7 +4253,7 @@
                             <div class="cast-scroll">
                                 ${cast.map(a => `
                                     <div class="cast-card">
-                                        <img src="${sanitizeText(a.image || 'https://picsum.photos/seed/actor/200/200')}" alt="${sanitizeText(a.name || 'Actor')}" loading="lazy" onerror="this.src='https://picsum.photos/seed/actor/200/200'" />
+                                        <img src="${sanitizeUrl(a.image || 'https://picsum.photos/seed/actor/200/200')}" alt="${sanitizeText(a.name || 'Actor')}" loading="lazy" onerror="this.src='https://picsum.photos/seed/actor/200/200'" />
                                         <h3 class="font-semibold text-sm safe-text">${sanitizeText(a.name || 'نەناسراو')}</h3>
                                         <p class="text-xs text-white/60 safe-text">${sanitizeText(a.character || '')}</p>
                                     </div>
@@ -4091,7 +4269,7 @@
                             <h2 class="text-xl font-semibold mb-6 text-purple-200">بۆچوونەکان</h2>
                             <div id="commentsList" class="space-y-4 mb-6"></div>
                             <div class="flex flex-col sm:flex-row gap-3">
-                                <input type="text" id="commentInput" placeholder="بۆچوونێک بنووسە…" class="input-field flex-1" />
+                                <input type="text" id="commentInput" placeholder="بۆچوونێک بنووسە…" class="input-field flex-1" maxlength="500" />
                                 <button id="submitComment" class="btn-primary px-6 py-3">ناردن</button>
                             </div>
                         </div>
@@ -4134,7 +4312,7 @@
                 watchBtn.onclick = function() {
                     const iframe = document.getElementById('trailerIframe');
                     if (iframe) {
-                        iframe.src = trailer;
+                        iframe.src = sanitizeUrl(trailer);
                         document.getElementById('trailerPlaceholder').classList.add('hidden');
                         document.getElementById('trailerVideo').classList.remove('hidden');
                         gsap.from(document.getElementById('trailerVideo'), { opacity: 0, y: 20, duration: 0.5 });
@@ -4150,8 +4328,18 @@
                     const starBtn = document.createElement('button');
                     starBtn.textContent = '★';
                     starBtn.dataset.value = i;
-                    starBtn.addEventListener('click', function() {
+                    starBtn.addEventListener('click', async function() {
                         if (!isLoggedIn()) { openProfileModal(); return; }
+                        const watched = await hasWatched(currentUser.id, id);
+                        if (!watched) {
+                            showToast('تکایە یەکەم "بینیم" کلیک بکە بۆ ئەم بەرهەمە، پاشان پلە بدە.', 'info');
+                            return;
+                        }
+                        const rateLimit = await checkAndIncrementLimit(currentUser.id, 'rating', 2);
+                        if (!rateLimit.allowed) {
+                            showToast('ئەمڕۆ توانیت تەنها ٢ جار پلە بدەیت. سبەینێ هەوڵبدە.', 'error');
+                            return;
+                        }
                         const ratingVal = parseInt(this.dataset.value);
                         handleRating(item.id, ratingVal, type);
                         for (let j = 0; j < starsContainer.children.length; j++) {
@@ -4177,10 +4365,9 @@
                 return data;
             }
 
-            function renderCommentItem(c, contentId) {
+            function renderCommentItem(c) {
                 const avatar = sanitizeText(c.username ? c.username.charAt(0).toUpperCase() : 'U');
                 const date = c.created_at ? new Date(c.created_at).toLocaleDateString('ku') : '';
-                const likes = c.likes || 0;
                 const safeUsername = sanitizeText(c.username || 'User');
                 const safeText = sanitizeText(c.text || '');
                 return `
@@ -4192,14 +4379,6 @@
                                     <span class="text-xs text-white/40">${date}</span>
                                 </div>
                                 <p class="text-white/80 text-sm safe-text">${safeText}</p>
-                                <div class="flex items-center gap-3 mt-2">
-                                    <button class="like-btn" data-content-id="${contentId}" data-comment-id="${c.id}" data-likes="${likes}">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="like-icon">
-                                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                                        </svg>
-                                        <span class="like-count">${likes}</span>
-                                    </button>
-                                </div>
                             </div>
                         </div>
                     `;
@@ -4213,24 +4392,7 @@
                     list.innerHTML = '<div class="text-white/40 text-center py-4">هیچ بۆچوونێک نیە. یەکەم بۆچوون بنووسە!</div>';
                     return;
                 }
-                list.innerHTML = comments.map(c => renderCommentItem(c, id)).join('');
-                // ─── FIX: Attach like event listeners properly ───
-                list.querySelectorAll('.like-btn').forEach(btn => {
-                    // Remove any existing listeners to avoid duplicates
-                    btn.removeEventListener('click', handleLikeClick);
-                    btn.addEventListener('click', handleLikeClick);
-                });
-            }
-
-            // Separate function for like click to ensure proper binding
-            function handleLikeClick(e) {
-                e.preventDefault();
-                const btn = this;
-                const contentId = parseInt(btn.dataset.contentId);
-                const commentId = btn.dataset.commentId;
-                const likesSpan = btn.querySelector('.like-count');
-                const currentLikes = parseInt(btn.dataset.likes) || 0;
-                handleLikeCommentV2(contentId, commentId, currentLikes, btn);
+                list.innerHTML = comments.map(c => renderCommentItem(c)).join('');
             }
 
             renderComments();
@@ -4241,6 +4403,16 @@
             if (submitBtn && commentInput) {
                 submitBtn.onclick = async function() {
                     if (!isLoggedIn()) { openProfileModal(); return; }
+                    const watched = await hasWatched(currentUser.id, id);
+                    if (!watched) {
+                        showToast('تکایە یەکەم "بینیم" کلیک بکە بۆ ئەم بەرهەمە، پاشان کۆمێنت بنووسە.', 'info');
+                        return;
+                    }
+                    const commentLimit = await checkAndIncrementLimit(currentUser.id, 'comment', 2);
+                    if (!commentLimit.allowed) {
+                        showToast('ئەمڕۆ توانیت تەنها ٢ جار کۆمێنت بنووسیت. سبەینێ هەوڵبدە.', 'error');
+                        return;
+                    }
                     const text = commentInput.value.trim();
                     if (text && supabaseClient && currentUser && currentUser.id) {
                         try {
@@ -4255,76 +4427,18 @@
                             });
                             if (error) throw error;
                             commentInput.value = '';
-                            cacheClear(); // clear comment cache
+                            cacheClear();
                             await renderComments();
                             await addXP(30);
                             trackGA('comment', { content_id: id, content_type: type });
                             showToast('بۆچوون زیاد کرا!', 'success');
+                            logAction(currentUser.id, 'INSERT', 'comments', null, 'Comment added');
                         } catch (e) {
                             console.error('Comment error:', e);
                             showToast('سەرکەوتوو نەبوو لە ناردنی بۆچوون: ' + (e.message || 'هەڵەی نەناسراو'), 'error');
                         }
                     }
                 };
-            }
-
-            // ─── Like comment ──────────────────────────────────────────
-            async function handleLikeCommentV2(contentId, commentId, currentLikes, btnElement) {
-                if (!isLoggedIn()) { openProfileModal(); return; }
-                if (!supabaseClient || !currentUser || !currentUser.id) {
-                    showToast('تکایە یەکەم بچۆ ژوورەوە.', 'error');
-                    return;
-                }
-                try {
-                    const { data: existingLike, error: checkErr } = await supabaseClient
-                        .from('comment_likes')
-                        .select('id')
-                        .eq('user_id', currentUser.id)
-                        .eq('comment_id', commentId)
-                        .maybeSingle();
-                    if (checkErr) throw checkErr;
-                    if (existingLike) {
-                        const { error: delErr } = await supabaseClient
-                            .from('comment_likes')
-                            .delete()
-                            .eq('id', existingLike.id);
-                        if (delErr) throw delErr;
-                        const newLikes = Math.max(0, currentLikes - 1);
-                        const { error: updErr } = await supabaseClient
-                            .from('comments')
-                            .update({ likes: newLikes })
-                            .eq('id', commentId);
-                        if (updErr) throw updErr;
-                        const likeSpan = btnElement.querySelector('.like-count');
-                        if (likeSpan) likeSpan.textContent = newLikes;
-                        btnElement.dataset.likes = newLikes;
-                        btnElement.classList.remove('liked');
-                        showToast('ڵایک لابرا.', 'info');
-                    } else {
-                        const { error: insErr } = await supabaseClient
-                            .from('comment_likes')
-                            .insert({ user_id: currentUser.id, comment_id: commentId });
-                        if (insErr) throw insErr;
-                        const newLikes = currentLikes + 1;
-                        const { error: updErr } = await supabaseClient
-                            .from('comments')
-                            .update({ likes: newLikes })
-                            .eq('id', commentId);
-                        if (updErr) throw updErr;
-                        const likeSpan = btnElement.querySelector('.like-count');
-                        if (likeSpan) likeSpan.textContent = newLikes;
-                        btnElement.dataset.likes = newLikes;
-                        btnElement.classList.add('liked');
-                        await addXP(5);
-                        showToast('ڵایک کرا!', 'success');
-                        trackGA('like_comment', { content_id: contentId });
-                    }
-                    // Invalidate comment cache
-                    cacheClear();
-                } catch (e) {
-                    console.error('Like comment error:', e);
-                    showToast('سەرکەوتوو نەبوو لە ڵایک کردن.', 'error');
-                }
             }
 
             hideAllPages();
@@ -4392,6 +4506,11 @@
             if (!isLoggedIn()) { openProfileModal(); return; }
             if (!supabaseClient || !currentUser || !currentUser.id) { showToast('تکایە دووبارە بچۆ ژوورەوە.', 'error'); return; }
             try {
+                const wlLimit = await checkAndIncrementLimit(currentUser.id, 'watchlist', 2);
+                if (!wlLimit.allowed) {
+                    showToast('ئەمڕۆ توانیت تەنها ٢ جار بۆ پێڕستی بینین زیاد بکەیت. سبەینێ هەوڵبدە.', 'error');
+                    return;
+                }
                 const { data: existing, error: checkErr } = await supabaseClient.from('watchlists').select('id').eq(
                     'user_id', currentUser.id).eq('content_id', contentId).maybeSingle();
                 if (checkErr) throw checkErr;
@@ -4401,6 +4520,7 @@
                     document.getElementById('watchlistText').textContent = 'زیادکردن بۆ پێڕستی بینین';
                     showToast('لە پێڕستی بینین لابرا.', 'info');
                     trackGA('remove_from_watchlist', { content_id: contentId });
+                    logAction(currentUser.id, 'DELETE', 'watchlists', existing.id, 'Removed from watchlist');
                 } else {
                     const { error } = await supabaseClient.from('watchlists').insert({ user_id: currentUser.id,
                         content_id: contentId, content_type: contentType });
@@ -4409,6 +4529,7 @@
                     await addXP(20);
                     showToast('زیاد کرا بۆ پێڕستی بینین!', 'success');
                     trackGA('add_to_watchlist', { content_id: contentId });
+                    logAction(currentUser.id, 'INSERT', 'watchlists', null, 'Added to watchlist');
                 }
                 cacheClear();
             } catch (e) {
@@ -4421,6 +4542,11 @@
             if (!isLoggedIn()) { openProfileModal(); return; }
             if (!supabaseClient || !currentUser || !currentUser.id) { showToast('تکایە دووبارە بچۆ ژوورەوە.', 'error'); return; }
             try {
+                const watchedLimit = await checkAndIncrementLimit(currentUser.id, 'watched', 2);
+                if (!watchedLimit.allowed) {
+                    showToast('ئەمڕۆ توانیت تەنها ٢ جار وەک بینراو دیاری بکەیت. سبەینێ هەوڵبدە.', 'error');
+                    return;
+                }
                 const { data: existing, error: checkErr } = await supabaseClient.from('watched').select('id').eq('user_id',
                     currentUser.id).eq('content_id', contentId).maybeSingle();
                 if (checkErr) throw checkErr;
@@ -4441,6 +4567,7 @@
                 if (btn) btn.innerHTML =
                     `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg><span>بینراو</span>`;
                 cacheClear();
+                logAction(currentUser.id, 'INSERT', 'watched', null, 'Marked as watched');
             } catch (e) {
                 console.error('Watched error:', e);
                 showToast('سەرکەوتوو نەبوو: ' + (e.message || 'هەڵەی نەناسراو'), 'error');
@@ -4478,6 +4605,8 @@
                     if (el) el.textContent = newAvg.toFixed(1);
                 }
                 cacheClear();
+                if (isNew) logAction(currentUser.id, 'INSERT', 'ratings', null, 'Rated content');
+                else logAction(currentUser.id, 'UPDATE', 'ratings', existing.id, 'Updated rating');
             } catch (e) {
                 console.error('Rating error:', e);
                 showToast('سەرکەوتوو نەبوو لە پلەدان: ' + (e.message || 'هەڵەی نەناسراو'), 'error');
@@ -4549,8 +4678,8 @@
                 updateOnlineBadge(users);
                 updateOnlineStatistics(users);
             });
-            channel.on('presence', { event: 'join' }, ({ key }) => {});
-            channel.on('presence', { event: 'leave' }, ({ key }) => {});
+            channel.on('presence', { event: 'join', filter: (key) => {} }, () => {});
+            channel.on('presence', { event: 'leave', filter: (key) => {} }, () => {});
             channel.subscribe(async (status) => {
                 if (status === 'SUBSCRIBED') {
                     await channel.track({ user_id: currentUser?.id || 'anonymous', online_at: new Date().toISOString() });
@@ -4587,7 +4716,7 @@
             gsap.fromTo(badge, { scale: 0.95, opacity: 0.8 }, { scale: 1, opacity: 1, duration: 0.3, ease: 'power2.out' });
         }
 
-        // ─── STATISTICS (hidden UI, sent to DB) ──────────────────────
+        // ─── STATISTICS ──────────────────────────────────────────────
         async function fetchAndSendStatistics() {
             try {
                 if (!supabaseInitialized) initSupabase();
@@ -4694,6 +4823,7 @@
             if (profile.xp === undefined || profile.xp === null) profile.xp = 0;
             if (profile.level === undefined || profile.level === null) profile.level = 1;
             currentUser = { ...profile, email: data.user.email };
+            logAction(currentUser.id, 'LOGIN', null, null, 'User logged in');
             trackGA('login', { method: 'email' });
             return currentUser;
         }
@@ -4701,6 +4831,11 @@
         async function signUp(email, password, username) {
             if (!supabaseInitialized) initSupabase();
             if (!supabaseClient) throw new Error('Supabase not available.');
+            const ip = await getClientIP();
+            const signupLimit = await checkSignupLimit(ip);
+            if (!signupLimit.allowed) {
+                throw new Error(signupLimit.reason);
+            }
             const { data, error } = await supabaseClient.auth.signUp({
                 email,
                 password,
@@ -4741,11 +4876,19 @@
                 } catch (_) {}
             }
             trackGA('sign_up', { method: 'email' });
+            logAction(currentUser.id, 'INSERT', 'profiles', currentUser.id, 'User signed up');
             return currentUser;
         }
 
         async function signOut() {
-            if (supabaseClient) { try { await supabaseClient.auth.signOut(); } catch (_) {} }
+            if (supabaseClient) {
+                try {
+                    if (currentUser) {
+                        await logAction(currentUser.id, 'LOGOUT', null, null, 'User logged out');
+                    }
+                    await supabaseClient.auth.signOut();
+                } catch (_) {}
+            }
             currentUser = null;
             updateAllAvatars();
             trackGA('logout', {});
@@ -4760,7 +4903,7 @@
                 el.innerHTML = '';
                 if (user && user.avatar_url) {
                     const img = document.createElement('img');
-                    img.src = user.avatar_url;
+                    img.src = sanitizeUrl(user.avatar_url);
                     img.alt = user.username || 'User';
                     el.appendChild(img);
                 } else if (user) {
@@ -4770,40 +4913,6 @@
                 }
             });
         }
-
-        window.triggerAvatarUpload = function() {
-            const input = document.getElementById('avatarFileInput');
-            if (input) input.click();
-        };
-
-        window.handleAvatarUpload = async function(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            if (!currentUser || !currentUser.id) { showToast('تکایە یەکەم بچۆ ژوورەوە.', 'error'); return; }
-            try {
-                if (supabaseClient) {
-                    const fileExt = file.name.split('.').pop();
-                    const fileName = `${currentUser.id}-${Date.now()}.${fileExt}`;
-                    const { error } = await supabaseClient.storage.from('avatars').upload(fileName, file, { upsert: true });
-                    if (error) throw error;
-                    const { data: urlData } = supabaseClient.storage.from('avatars').getPublicUrl(fileName);
-                    const publicUrl = urlData.publicUrl;
-                    const { error: uErr } = await supabaseClient.from('profiles').update({ avatar_url: publicUrl }).eq(
-                        'id', currentUser.id);
-                    if (uErr) throw uErr;
-                    currentUser.avatar_url = publicUrl;
-                    updateAllAvatars();
-                    showToast('وێنەکە نوێکرایەوە!', 'success');
-                    if (document.getElementById('profilePage').style.display === 'block') buildProfilePage(currentUser);
-                } else {
-                    showToast('Supabase بەردەست نیە.', 'error');
-                }
-            } catch (err) {
-                console.error('Avatar upload error:', err);
-                showToast('سەرکەوتوو نەبوو لە بارکردنی وێنە.', 'error');
-            }
-            event.target.value = '';
-        };
 
         // ─── FETCH WEBSITE SETTINGS ──────────────────────────────────
         async function fetchWebsiteSettings() {
@@ -4871,21 +4980,22 @@
                 '.hero-logo img, #glassLogoImg, #detailLogoImg, #profileLogoImg, #worksLogoImg, #rankingsLogoImg, #leaderboardLogoImg, #recommendationsLogoImg, #collectionsLogoImg, #collectionDetailLogoImg'
                 );
             logoImgs.forEach(img => {
-                if (img && s.logo_url) img.src = s.logo_url;
+                if (img && s.logo_url) img.src = sanitizeUrl(s.logo_url);
                 if (img.closest('.hero-logo') && !img.closest('.glass-header')) {
-                    img.style.height = logoSize + 'px';
+                    img.style.height = Math.min(logoSize, window.innerWidth * 0.15) + 'px';
                 } else if (img.closest('.glass-header')) {
-                    img.style.height = Math.round(logoSize * 0.5) + 'px';
+                    img.style.height = Math.min(logoSize * 0.5, window.innerWidth * 0.08) + 'px';
                 } else {
-                    img.style.height = Math.round(logoSize * 0.7) + 'px';
+                    img.style.height = Math.min(logoSize * 0.7, window.innerWidth * 0.1) + 'px';
                 }
             });
             const heroLogoImg = document.querySelector('#heroLogoImg');
             if (heroLogoImg) {
+                heroLogoImg.style.height = Math.min(logoSize, window.innerWidth * 0.15) + 'px';
                 const mq = window.matchMedia('(max-width: 768px)');
                 const updateHeroLogo = () => {
-                    if (mq.matches) heroLogoImg.style.height = Math.min(logoSize * 1.8, 180) + 'px';
-                    else heroLogoImg.style.height = logoSize + 'px';
+                    if (mq.matches) heroLogoImg.style.height = Math.min(logoSize * 1.2, window.innerWidth * 0.2) + 'px';
+                    else heroLogoImg.style.height = Math.min(logoSize, window.innerWidth * 0.15) + 'px';
                 };
                 updateHeroLogo();
                 mq.addEventListener('change', updateHeroLogo);
@@ -4902,11 +5012,11 @@
                     `<span>&copy; ${new Date().getFullYear()} ${s.website_name || 'KurdMDb'}. هەموو مافەکان پارێزراون.</span>`;
             }
             const fb = document.getElementById('socialFb');
-            if (fb) fb.href = s.facebook_url || '#';
+            if (fb) fb.href = sanitizeUrl(s.facebook_url || '#');
             const ig = document.getElementById('socialIg');
-            if (ig) ig.href = s.instagram_url || '#';
+            if (ig) ig.href = sanitizeUrl(s.instagram_url || '#');
             const tt = document.getElementById('socialTt');
-            if (tt) tt.href = s.tiktok_url || '#';
+            if (tt) tt.href = sanitizeUrl(s.tiktok_url || '#');
             if (s.favicon_url) {
                 let link = document.querySelector('link[rel="icon"]') || document.querySelector('link[rel="shortcut icon"]');
                 if (!link) {
@@ -4914,7 +5024,7 @@
                     link.rel = 'icon';
                     document.head.appendChild(link);
                 }
-                link.href = s.favicon_url;
+                link.href = sanitizeUrl(s.favicon_url);
             }
             document.title = s.website_name || 'KurdMDb';
         }
@@ -5126,7 +5236,7 @@
             } catch (e) { console.warn('Statistics fetch error:', e); }
         }
 
-        // ─── INCREMENT VIEW ────────────────────────────────────────────
+        // ─── INCREMENT VIEW (with logging) ──────────────────────────────
         async function incrementView(contentId, type) {
             try {
                 if (!supabaseInitialized) initSupabase();
@@ -5141,6 +5251,10 @@
                     }
                 }
                 trackGA('view_content', { content_id: contentId, content_type: type });
+                // Log view
+                if (currentUser && currentUser.id) {
+                    await logAction(currentUser.id, 'VIEW', type || 'content', String(contentId), `Viewed content ${contentId}`);
+                }
             } catch (_) {}
         }
 
@@ -5313,7 +5427,7 @@
                 slide.innerHTML = `
                         <div class="rec-card-new" onclick="showDetail('${sanitizeText(slug)}', '${sanitizeText(type)}')">
                             <div class="rec-poster-wrap">
-                                ${poster ? `<img src="${sanitizeText(poster)}" alt="${title}" loading="lazy" onerror="this.style.display='none'" />` : '<div class="w-full h-full bg-gray-800 flex items-center justify-center text-white/20">No Poster</div>'}
+                                ${poster ? `<img src="${sanitizeUrl(poster)}" alt="${title}" loading="lazy" onerror="this.style.display='none'" />` : '<div class="w-full h-full bg-gray-800 flex items-center justify-center text-white/20">No Poster</div>'}
                                 <div class="rec-poster-overlay"></div>
                                 <span class="rec-badge-top">${badgeText}</span>
                                 ${topBadge}
@@ -5373,7 +5487,7 @@
                     const subtitle = sanitizeText(slide.hero_subtitle || 'باشترین فیلم و ئەنیمەیشنەکان بدۆزەوە');
                     const btnText = sanitizeText(slide.hero_button_text || 'گەڕان');
                     div.innerHTML = `
-                            <div class="slide-backdrop" style="background-image:url('${sanitizeText(bg)}')"></div>
+                            <div class="slide-backdrop" style="background-image:url('${sanitizeUrl(bg)}')"></div>
                             <div class="slide-overlay overlay-vignette"></div>
                             <div class="slide-overlay overlay-bottom"></div>
                             <div class="slide-overlay overlay-right hidden md:block"></div>
@@ -5385,7 +5499,7 @@
                                         <button class="btn-primary" onclick="goHome();showWorks();">
                                             <span>${btnText}</span>
                                         </button>
-                                        ${slide.hero_trailer ? `<button class="btn-secondary" onclick="window.open('${sanitizeText(slide.hero_trailer)}','_blank')"><span>بینینی ترەیلەر</span></button>` : ''}
+                                        ${slide.hero_trailer ? `<button class="btn-secondary" onclick="window.open('${sanitizeUrl(slide.hero_trailer)}','_blank')"><span>بینینی ترەیلەر</span></button>` : ''}
                                     </div>
                                 </div>
                             </div>
@@ -5432,11 +5546,11 @@
             ads.forEach(ad => {
                 const slide = document.createElement('div');
                 slide.className = 'swiper-slide';
-                const link = sanitizeText(ad.link || '#');
-                const image = sanitizeText(ad.image_url || '');
+                const link = sanitizeUrl(ad.link || '#');
+                const image = sanitizeUrl(ad.image_url || '');
                 const title = sanitizeText(ad.title || 'Reklam');
                 const mediaType = ad.media_type || 'image';
-                const mediaUrl = sanitizeText(ad.media_url || image);
+                const mediaUrl = sanitizeUrl(ad.media_url || image);
                 let contentHTML = '';
                 if (mediaType === 'video' && mediaUrl) {
                     const isEmbed = mediaUrl.includes('youtube.com') || mediaUrl.includes('youtu.be') || mediaUrl.includes(
@@ -5507,7 +5621,7 @@
             }
         }
 
-        // ─── CREATE CARD HTML (safe) ──────────────────────────────────
+        // ─── CREATE CARD HTML ──────────────────────────────────────────
         function createCardHTML(item, type = 'movie') {
             const rating = item.rating || item.kurddb_rating || 0;
             const year = item.release_date ? new Date(item.release_date).getFullYear() : 'N/A';
@@ -5526,7 +5640,7 @@
             return `
                     <div class="kurd-card" onclick="showDetail('${slug}', '${sanitizeText(type)}')">
                         <div class="kurd-poster" style="height:320px; position:relative;">
-                            ${poster ? `<img src="${sanitizeText(poster)}" alt="${title}" loading="lazy" onerror="this.style.display='none'" />` : '<div class="w-full h-full bg-gray-800 flex items-center justify-center text-white/20">No Poster</div>'}
+                            ${poster ? `<img src="${sanitizeUrl(poster)}" alt="${title}" loading="lazy" onerror="this.style.display='none'" />` : '<div class="w-full h-full bg-gray-800 flex items-center justify-center text-white/20">No Poster</div>'}
                             ${topBadge}
                         </div>
                         <div class="kurd-info">
@@ -5561,7 +5675,7 @@
             return `
                     <div class="popular-card" onclick="showDetail('${slug}', '${sanitizeText(type)}')">
                         <div class="popular-poster" style="height:240px; position:relative;">
-                            ${poster ? `<img src="${sanitizeText(poster)}" alt="${title}" loading="lazy" onerror="this.style.display='none'" />` : '<div class="w-full h-full bg-gray-800 flex items-center justify-center text-white/20">No Poster</div>'}
+                            ${poster ? `<img src="${sanitizeUrl(poster)}" alt="${title}" loading="lazy" onerror="this.style.display='none'" />` : '<div class="w-full h-full bg-gray-800 flex items-center justify-center text-white/20">No Poster</div>'}
                             ${topBadge}
                             <div class="rating-overlay">
                                 <span class="star">★ ${typeof rating === 'number' ? rating.toFixed(1) : '0.0'}</span>
@@ -5594,7 +5708,7 @@
             return `
                     <div class="nr-card" onclick="showDetail('${slug}', '${sanitizeText(type)}')">
                         <div class="nr-poster-wrap" style="height:320px; position:relative;">
-                            ${poster ? `<img src="${sanitizeText(poster)}" alt="${title}" loading="lazy" onerror="this.style.display='none'" />` : '<div class="w-full h-full bg-gray-800 flex items-center justify-center text-white/20">No Poster</div>'}
+                            ${poster ? `<img src="${sanitizeUrl(poster)}" alt="${title}" loading="lazy" onerror="this.style.display='none'" />` : '<div class="w-full h-full bg-gray-800 flex items-center justify-center text-white/20">No Poster</div>'}
                             ${topBadge}
                             <div class="nr-overlay"></div>
                         </div>
@@ -5879,7 +5993,7 @@
 
                 card.innerHTML = `
                         <div class="works-poster" style="height:240px; position:relative;">
-                            ${poster ? `<img src="${sanitizeText(poster)}" alt="${title}" loading="lazy" onerror="this.style.display='none'" />` : '<div class="w-full h-full bg-gray-800 flex items-center justify-center text-white/20">No Poster</div>'}
+                            ${poster ? `<img src="${sanitizeUrl(poster)}" alt="${title}" loading="lazy" onerror="this.style.display='none'" />` : '<div class="w-full h-full bg-gray-800 flex items-center justify-center text-white/20">No Poster</div>'}
                             ${topBadge}
                             <div class="rating-overlay">
                                 <span class="star">★ ${typeof rating === 'number' ? rating.toFixed(1) : '0.0'}</span>
@@ -6097,7 +6211,6 @@
                 allCollections = []; return allCollections; }
         }
 
-        // ─── FIX 1: fetchCollectionItems — select content_type ───
         async function fetchCollectionItems(collectionId) {
             try {
                 if (!supabaseInitialized) initSupabase();
@@ -6116,18 +6229,6 @@
             } catch (e) { console.error('Collection items fetch exception:', e); return []; }
         }
 
-        // ─── FIX 2: getContentByIds stays unchanged; add getContentByCollectionItems ───
-        function getContentByIds(ids) {
-            const all = [...allMoviesData, ...allAnimationsData];
-            const map = {};
-            ids.forEach(id => {
-                const item = all.find(c => c.id === id);
-                if (item) map[id] = item;
-            });
-            return map;
-        }
-
-        // New function: uses content_type to pick the correct data source
         function getContentByCollectionItems(items) {
             const map = {};
             items.forEach(i => {
@@ -6170,7 +6271,7 @@
                     const safeName = sanitizeText(coll.name);
                     card.innerHTML = `
                             <div class="collection-cover">
-                                <img src="${sanitizeText(cover)}" alt="${safeName}" loading="lazy" onerror="this.style.display='none'" />
+                                <img src="${sanitizeUrl(cover)}" alt="${safeName}" loading="lazy" onerror="this.style.display='none'" />
                                 <div class="cover-overlay"></div>
                             </div>
                             <div class="collection-info">
@@ -6227,7 +6328,7 @@
                     const safeName = sanitizeText(coll.name);
                     card.innerHTML = `
                             <div class="collection-cover">
-                                <img src="${sanitizeText(cover)}" alt="${safeName}" loading="lazy" onerror="this.style.display='none'" />
+                                <img src="${sanitizeUrl(cover)}" alt="${safeName}" loading="lazy" onerror="this.style.display='none'" />
                                 <div class="cover-overlay"></div>
                             </div>
                             <div class="collection-info">
@@ -6286,7 +6387,6 @@
             if (!main) return;
 
             const items = await fetchCollectionItems(coll.id);
-            // ─── FIX 3: use getContentByCollectionItems instead of getContentByIds ───
             const contentMap = getContentByCollectionItems(items);
             const orderedItems = items.map(i => ({ ...i, content: contentMap[i.content_id] })).filter(i => i.content);
 
@@ -6306,7 +6406,6 @@
                     const title = sanitizeText(content.title || 'Untitled');
                     const year = content.release_date ? new Date(content.release_date).getFullYear() : 'N/A';
                     const poster = content.poster_url || '';
-                    // ─── FIX 4: use case-insensitive type comparison ───
                     const type = (content.type || '').toLowerCase() === 'animation' ? 'animation' : 'movie';
                     const slugId = content.slug || content.id;
                     const rating = content.rating || content.kurddb_rating || 0;
@@ -6321,7 +6420,7 @@
                     gridHTML += `
                             <div class="collection-item-wrapper" onclick="showDetail('${sanitizeText(slugId)}', '${sanitizeText(type)}')">
                                 <div class="collection-item-poster-wrap">
-                                    ${poster ? `<img src="${sanitizeText(poster)}" alt="${title}" loading="lazy" onerror="this.style.display='none'" />` : '<div class="w-full h-full bg-gray-800 flex items-center justify-center text-white/20">No Poster</div>'}
+                                    ${poster ? `<img src="${sanitizeUrl(poster)}" alt="${title}" loading="lazy" onerror="this.style.display='none'" />` : '<div class="w-full h-full bg-gray-800 flex items-center justify-center text-white/20">No Poster</div>'}
                                     <div class="collection-item-rank-badge">#${rank}</div>
                                     ${topBadge}
                                 </div>
@@ -6344,7 +6443,7 @@
             main.innerHTML = `
                     <div class="max-w-7xl mx-auto">
                         <div class="collection-detail-cover">
-                            <img src="${sanitizeText(cover)}" alt="${safeName}" onerror="this.style.display='none'" />
+                            <img src="${sanitizeUrl(cover)}" alt="${safeName}" onerror="this.style.display='none'" />
                         </div>
                         <h1 class="collection-detail-title safe-text">${safeName}</h1>
                         ${safeDesc ? `<p class="collection-detail-desc safe-text">${safeDesc}</p>` : ''}
@@ -6550,7 +6649,7 @@
             container.innerHTML = `
                     <div class="rec-single-card" id="recSingleCard">
                         <div class="rec-single-poster" style="position:relative;">
-                            ${poster ? `<img src="${sanitizeText(poster)}" alt="${title}" loading="lazy" onerror="this.style.display='none'" />` : '<div class="w-full aspect-[2/3] bg-gray-800 flex items-center justify-center text-white/20">No Poster</div>'}
+                            ${poster ? `<img src="${sanitizeUrl(poster)}" alt="${title}" loading="lazy" onerror="this.style.display='none'" />` : '<div class="w-full aspect-[2/3] bg-gray-800 flex items-center justify-center text-white/20">No Poster</div>'}
                             ${topBadge}
                         </div>
                         <div class="rec-single-info">
@@ -6634,11 +6733,9 @@
             let html = `
                     <div class="max-w-5xl mx-auto">
                         <div class="glass-panel p-6 md:p-10 text-center mb-10">
-                            <div class="profile-avatar-lg mb-4" style="position:relative;" onclick="triggerAvatarUpload()">
-                                ${avatarUrl ? `<img src="${sanitizeText(avatarUrl)}" alt="${username}" />` : username.charAt(0).toUpperCase()}
-                                <input type="file" id="avatarFileInput" accept="image/*" class="file-input-overlay" onchange="handleAvatarUpload(event)" />
+                            <div class="profile-avatar-lg mb-4" style="position:relative;">
+                                ${avatarUrl ? `<img src="${sanitizeUrl(avatarUrl)}" alt="${username}" />` : username.charAt(0).toUpperCase()}
                             </div>
-                            <p class="text-xs text-white/40 mt-1 mb-3">بۆ گۆڕینی وێنە کلیک بکە</p>
                             <h1 class="text-3xl font-cinematic font-bold mb-1 safe-text">${username}</h1>
                             <p class="text-purple-300 font-semibold text-lg">${sanitizeText(currentTitle.title)}</p>
                             <p class="text-white/40 text-sm">ئاست ${level}</p>
@@ -6677,7 +6774,7 @@
                                         topBadge = `<div class="top250-badge top250-badge-sm" style="position:absolute; top:6px; right:6px; font-size:0.45rem; padding:2px 6px;">🏆 #${rank}</div>`;
                                     }
                                     return `<div class="kurd-card" onclick="showDetail('${sanitizeText(slug)}', '${sanitizeText(type)}')">
-                                        <div class="kurd-poster" style="height:260px; position:relative;">${poster ? `<img src="${sanitizeText(poster)}" alt="${title}" loading="lazy" onerror="this.style.display='none'" />` : '<div class="w-full h-full bg-gray-800 flex items-center justify-center text-white/20">No Poster</div>'}${topBadge}</div>
+                                        <div class="kurd-poster" style="height:260px; position:relative;">${poster ? `<img src="${sanitizeUrl(poster)}" alt="${title}" loading="lazy" onerror="this.style.display='none'" />` : '<div class="w-full h-full bg-gray-800 flex items-center justify-center text-white/20">No Poster</div>'}${topBadge}</div>
                                         <div class="kurd-info"><h3 class="kurd-title safe-text" style="font-size:0.9rem;">${title}</h3><div class="kurd-meta"><span class="rating-badge" style="padding:2px 8px; font-size:0.65rem;"><span class="rating-star">★</span>${typeof rating === 'number' ? rating.toFixed(1) : '0.0'}</span><span style="font-size:0.7rem;">${year}</span></div></div></div>`;
                                 }).join('')}</div>`
                             }
@@ -6699,7 +6796,7 @@
                                         topBadge = `<div class="top250-badge top250-badge-sm" style="position:absolute; top:6px; right:6px; font-size:0.45rem; padding:2px 6px;">🏆 #${rank}</div>`;
                                     }
                                     return `<div class="kurd-card" onclick="showDetail('${sanitizeText(slug)}', '${sanitizeText(type)}')">
-                                        <div class="kurd-poster" style="height:260px; position:relative;">${poster ? `<img src="${sanitizeText(poster)}" alt="${title}" loading="lazy" onerror="this.style.display='none'" />` : '<div class="w-full h-full bg-gray-800 flex items-center justify-center text-white/20">No Poster</div>'}${topBadge}</div>
+                                        <div class="kurd-poster" style="height:260px; position:relative;">${poster ? `<img src="${sanitizeUrl(poster)}" alt="${title}" loading="lazy" onerror="this.style.display='none'" />` : '<div class="w-full h-full bg-gray-800 flex items-center justify-center text-white/20">No Poster</div>'}${topBadge}</div>
                                         <div class="kurd-info"><h3 class="kurd-title safe-text" style="font-size:0.9rem;">${title}</h3><div class="kurd-meta"><span class="rating-badge" style="padding:2px 8px; font-size:0.65rem;"><span class="rating-star">★</span>${typeof rating === 'number' ? rating.toFixed(1) : '0.0'}</span><span style="font-size:0.7rem;">${year}</span></div></div></div>`;
                                 }).join('')}</div>`
                             }
@@ -6741,6 +6838,8 @@
                 user.level = newLevel;
                 currentUser = user;
                 updateAllAvatars();
+                // Log XP update
+                logAction(user.id, 'UPDATE', 'profiles', user.id, `XP updated: +${amount} (${newXp} total)`);
             } catch (e) { console.error('addXP fatal error:', e);
                 showToast('نەتوانرا خاڵەکان نوێ بکرێنەوە.', 'error'); }
         }
@@ -6946,7 +7045,7 @@
                     }
                     return `
                             <div class="modal-result-item" onclick="closeSearchFn();showDetail('${sanitizeText(slug)}', '${sanitizeText(type)}')">
-                                <div class="modal-result-poster">${poster ? `<img src="${sanitizeText(poster)}" alt="${title}" onerror="this.style.display='none'" />` : '<div class="w-full h-full bg-gray-800 flex items-center justify-center text-white/20 text-xs">No Poster</div>'}</div>
+                                <div class="modal-result-poster">${poster ? `<img src="${sanitizeUrl(poster)}" alt="${title}" onerror="this.style.display='none'" />` : '<div class="w-full h-full bg-gray-800 flex items-center justify-center text-white/20 text-xs">No Poster</div>'}</div>
                                 <div>
                                     <h4 class="font-semibold safe-text">${title} ${topBadge}</h4>
                                     <div class="flex items-center gap-3 text-sm text-white/60 mt-1">
@@ -7106,7 +7205,7 @@
                 div.innerHTML = `
                         <span class="rank-number">#${rank}</span>
                         <div class="rank-poster">
-                            ${poster ? `<img src="${sanitizeText(poster)}" alt="${title}" loading="lazy" onerror="this.style.display='none'" />` : '<div class="w-full h-full bg-gray-800 flex items-center justify-center text-white/20 text-xs">No Poster</div>'}
+                            ${poster ? `<img src="${sanitizeUrl(poster)}" alt="${title}" loading="lazy" onerror="this.style.display='none'" />` : '<div class="w-full h-full bg-gray-800 flex items-center justify-center text-white/20 text-xs">No Poster</div>'}
                         </div>
                         <div class="rank-info">
                             <div class="rank-title safe-text">${title}</div>
@@ -7174,7 +7273,7 @@
                             div.innerHTML = `
                                     <span class="podium-rank">#${rank}</span>
                                     <div class="podium-avatar">
-                                        ${avatar ? `<img src="${sanitizeText(avatar)}" alt="${username}" />` : username.charAt(0).toUpperCase()}
+                                        ${avatar ? `<img src="${sanitizeUrl(avatar)}" alt="${username}" />` : username.charAt(0).toUpperCase()}
                                     </div>
                                     <div class="podium-username safe-text">${username}</div>
                                     <div class="podium-details">
@@ -7205,7 +7304,7 @@
                         div.innerHTML = `
                                 <span class="lb-rank">#${rank}</span>
                                 <div class="lb-avatar">
-                                    ${avatar ? `<img src="${sanitizeText(avatar)}" alt="${username}" />` : username.charAt(0).toUpperCase()}
+                                    ${avatar ? `<img src="${sanitizeUrl(avatar)}" alt="${username}" />` : username.charAt(0).toUpperCase()}
                                 </div>
                                 <div class="lb-info">
                                     <div class="lb-username safe-text">${username}</div>
@@ -7317,7 +7416,7 @@
 
                 await fetchTop250();
 
-                const [settings, heroSlides, ads, movies, animations, filterData, stats, websites] = await Promise.all([
+                const [settings, heroSlides, ads, movies, animations, filterData, stats, websites, collections] = await Promise.all([
                     fetchWebsiteSettings(),
                     fetchHeroSlides(),
                     fetchAds(),
@@ -7325,20 +7424,22 @@
                     fetchAnimations(),
                     fetchFilterData(),
                     fetchStatistics(),
-                    fetchWebsites()
+                    fetchWebsites(),
+                    fetchCollections()
                 ]);
 
-                await fetchCollections();
+                const collectionPromises = allCollections.map(coll => fetchCollectionItems(coll.id));
+                const collectionItemsResults = await Promise.all(collectionPromises);
 
                 contentCollectionsMap = {};
-                for (const coll of allCollections) {
-                    const items = await fetchCollectionItems(coll.id);
+                allCollections.forEach((coll, idx) => {
+                    const items = collectionItemsResults[idx] || [];
                     for (const item of items) {
-                        const cid = item.content_id;
+                        const cid = top250Key(item.content_id, item.content_type);
                         if (!contentCollectionsMap[cid]) contentCollectionsMap[cid] = [];
                         contentCollectionsMap[cid].push(coll);
                     }
-                }
+                });
                 window.contentCollectionsMap = contentCollectionsMap;
 
                 allCollectionItems = Object.values(contentCollectionsMap).flat();
@@ -7380,7 +7481,7 @@
                 } else { resolveRoute(); }
                 trackPageView(window.location.pathname);
                 isInitialized = true;
-                console.log('✅ KurdMDb Final loaded with XSS protection, cache, performance fixes, back navigation fix & like fix.');
+                console.log('✅ KurdMDb Final loaded with all fixes (Collections, Top250, Logging, Security, Performance, Back Button).');
             } catch (e) {
                 console.error('❌ Initialization error:', e);
                 showToast('بارکردنی ناوەڕۆک سەرکەوتوو نەبوو. تکایە پەڕە نوێ بکەوە.', 'error');
@@ -7413,8 +7514,6 @@
         window.switchLibraryTab = switchLibraryTab;
         window.applyFilters = applyFilters;
         window.applyRankFilters = applyRankFilters;
-        window.triggerAvatarUpload = triggerAvatarUpload;
-        window.handleAvatarUpload = handleAvatarUpload;
         window.handleWatchlistToggle = window.handleWatchlistToggle;
         window.handleWatched = window.handleWatched;
         window.handleRating = window.handleRating;
@@ -7424,8 +7523,9 @@
         window.addXP = addXP;
         window.renderLeaderboard = renderLeaderboard;
         window.generateRecommendations = generateRecommendations;
+        window.goBack = goBack;
 
-        console.log('🚀 KurdMDb Final loaded with all fixes: back navigation, like comments, dynamic functionality, security & performance.');
+        console.log('🚀 KurdMDb Final loaded with all fixes: collections, top250, logging, security, performance, back button.');
     </script>
 
 </body>
