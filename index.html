@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="ku" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KurdMDb | زانیاری فیلم و ئەنیمە</title>
+    <meta name="description" content="پلاتفۆرمێکی بینایی پێشکەوتوو بۆ دۆزینەوی فیلم و ئەنیمەیشن." />
+    <link rel="canonical" href="https://kurdmdb.vercel.app/" />
+
+    <!-- Favicon -->
+    <link rel="icon" href="https://cdn.phototourl.com/free/2026-08-14-44ea2253-95ea-466e-80bb-514f8ced0dec.jpg" type="image/png" />
+    <link rel="shortcut icon" href="https://cdn.phototourl.com/free/2026-08-14-44ea2253-95ea-466e-80bb-514f8ced0dec.jpg" type="image/png" />
+
+    <!-- OG / Twitter -->
+    <meta property="og:title" content="KurdMDb | زانیاری فیلم و ئەنیمەیشن" />
+    <meta property="og:description" content="پلاتفۆرمێکی پێشکەوتوو بۆ دۆزینەوی فیلم و ئەنیمەیشن." />
+    <meta property="og:image" content="https://i.ibb.co/8L8vGMy5/IMG-7953.png" />
+    <meta property="og:url" content="https://kurdmdb.vercel.app/" />
+    <meta property="og:type" content="website" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="KurdMDb | زانیاری فیلم و ئەنیمە" />
+    <meta name="twitter:description" content="پلاتفۆرمێکی بینایی پێشکەوتوو بۆ دۆزینەوی فیلم و ئەنیمەیشن." />
+    <meta name="twitter:image" content="https://i.ibb.co/8L8vGMy5/IMG-7953.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+    <!-- Swiper CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+
+    <!-- ===== SECURITY: DOMPurify (HTML sanitization for XSS protection) ===== -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js" integrity="sha512-jB0TkTBeQC9ZSkBqDhdmfTv1qdfbWpGE72yJ/01Srq6hEzZIz2xkz1e57p9ai7IeHMwEG7HpzG6NdptChif5Pg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+    <!-- ===== STYLES ===== -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        oled: '#000000',
+                        glass: { light: 'rgba(255,255,255,0.04)', medium: 'rgba(255,255,255,0.06)',
+                            border: 'rgba(255,255,255,0.08)', bright: 'rgba(255,255,255,0.14)' },
+                        accent: { purple: '#8B5CF6', blue: '#3B82F6', deep: '#6D28D9', royal: '#7C3AED' }
+                    },
+                    backdropBlur: { xs: '4px' },
+                    fontFamily: {
+                        cinematic: ['"Cinzel"', 'serif'],
+                        body: ['"Noto Sans Arabic"', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- ===== GA ===== -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-0RGZ4V7S5V"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', 'G-0RGZ4V7S5V');
+    </script>
+
+    <!-- ===== STYLESHEET (extracted from inline <style>) ===== -->
+    <link rel="stylesheet" href="style.css" />
+
+    <!-- ─── Content Security Policy ──────────────────────────────────────
+         Restricts which origins scripts/styles/images/fonts/connections may
+         load from, so an injected/unauthorized script cannot execute even if
+         it ends up in the page (defense against XSS).
+         NOTE: 'conductivebreeds.com' is the ad-network domain used by the
+         invoke.js block in the ADS SECTION (Adsterra-style ad tag). It is
+         allowed here only so that ad slot keeps working; it is untrusted
+         third-party JS that this page cannot control, so review/remove it
+         if you'd rather not grant it execution rights on this domain.
+         NOTE: frame-src also lists youtube.com/youtube-nocookie.com/
+         player.vimeo.com — the detail page's official-trailer iframe and
+         the video-ad slide in the ADS carousel both embed player iframes
+         from these hosts (see trailer_url / ad media_url). Without these
+         here the CSP silently blocks the iframe from loading (no console
+         crash, just a blank player), independent of anything in the JS. -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' 'unsafe-eval'
+            https://cdn.tailwindcss.com
+            https://cdn.jsdelivr.net
+            https://cdnjs.cloudflare.com
+            https://www.googletagmanager.com
+            https://conductivebreeds.com;
+        style-src 'self' 'unsafe-inline'
+            https://fonts.googleapis.com
+            https://cdn.jsdelivr.net;
+        font-src 'self'
+            https://fonts.gstatic.com;
+        img-src 'self' data: blob:
+            https://cdn.phototourl.com
+            https://i.ibb.co
+            https://i.postimg.cc
+            https://picsum.photos
+            https://image.tmdb.org
+            https://ayxuklozwgnrzveisvof.supabase.co;
+        connect-src 'self'
+            https://ayxuklozwgnrzveisvof.supabase.co
+            wss://ayxuklozwgnrzveisvof.supabase.co
+            https://www.googletagmanager.com
+            https://www.google-analytics.com;
+        frame-src 'self'
+            https://conductivebreeds.com
+            https://www.youtube.com
+            https://youtube.com
+            https://www.youtube-nocookie.com
+            https://player.vimeo.com;
+        object-src 'none';
+        base-uri 'self';
+        form-action 'self';
+    " />
+</head>
+<body>
+
+    <!-- ─── TOAST CONTAINER ─── -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- ─── SEARCH MODAL ─── -->
+    <div class="search-modal-overlay" id="searchModalOverlay">
+        <div class="search-modal">
+            <div class="search-modal-bar" id="searchModalBar">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-white/60 ml-3">
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <input type="text" id="modalSearchInput" placeholder="گەڕان بۆ فیلم، ئەنیمەیشن…" autocomplete="off" />
+                <button class="text-white/50 hover:text-white transition p-2" id="closeSearchModal" aria-label="Close">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-results" id="modalResults">
+                <div class="p-4 text-sm text-white/50">دەستبکە بە نووسین بۆ گەڕان...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ─── PROFILE / AUTH MODAL ─── -->
+    <div class="profile-modal-overlay" id="profileModalOverlay">
+        <div class="profile-modal">
+            <div class="glass-panel p-6 md:p-8 relative">
+                <button class="absolute top-4 left-4 text-white/50 hover:text-white transition p-2" onclick="closeProfileModal()" aria-label="Close">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+                <div class="flex gap-4 mb-6 justify-center">
+                    <button class="text-lg font-semibold pb-2 border-b-2 border-purple-500 text-white" id="tabLogin" onclick="switchAuthTab('login')">چوونەژوورەوە</button>
+                    <button class="text-lg font-semibold pb-2 border-b-2 border-transparent text-white/50" id="tabCreate" onclick="switchAuthTab('create')">دروستکردنی هەژمار</button>
+                </div>
+                <div id="loginForm">
+                    <div class="space-y-4">
+                        <input type="email" id="loginEmail" class="input-field" placeholder="ئیمەیڵ" />
+                        <input type="password" id="loginPassword" class="input-field" placeholder="وشەی نهێنی" />
+                        <p class="text-red-400 text-sm hidden" id="loginError">زانیاری نادروست</p>
+                        <button class="btn-primary w-full justify-center" onclick="handleLogin()">چوونەژوورەوە</button>
+                    </div>
+                </div>
+                <div id="createForm" class="hidden">
+                    <div class="space-y-4">
+                        <input type="text" id="createUsername" class="input-field" placeholder="ناوی بەکارهێنەر" />
+                        <input type="email" id="createEmail" class="input-field" placeholder="ئیمەیڵ" />
+                        <input type="password" id="createPassword" class="input-field" placeholder="وشەی نهێنی" />
+                        <p class="text-red-400 text-sm hidden" id="createError"></p>
+                        <button class="btn-primary w-full justify-center" onclick="handleCreateAccount()">دروستکردنی هەژمار</button>
+                        <p class="text-xs text-white/40 text-center mt-2">بە دروستکردنی هەژمار، ڕازی دەبیت بە مەرجەکانمان.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ─── BOTTOM NAV ─── -->
+    <div class="bottom-nav" id="bottomNav">
+        <button class="nav-icon active" id="navHome" onclick="goHome()" aria-label="Home">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
+            <span class="nav-label">سەرەکی</span>
+        </button>
+
+        <button class="nav-icon" id="navRecommendations" onclick="showRecommendations()" aria-label="Recommendations">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+            </svg>
+            <span class="nav-label">پێشنیار</span>
+        </button>
+
+        <button class="nav-icon" id="navWorks" onclick="showWorks()" aria-label="Works">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7" />
+                <rect x="14" y="3" width="7" height="7" />
+                <rect x="14" y="14" width="7" height="7" />
+                <rect x="3" y="14" width="7" height="7" />
+            </svg>
+            <span class="nav-label">بەرهەمەکان</span>
+        </button>
+
+        <button class="nav-icon" id="navCollections" onclick="showCollections()" aria-label="Collections">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="3" width="20" height="18" rx="2" />
+                <line x1="8" y1="21" x2="8" y2="3" />
+                <line x1="16" y1="21" x2="16" y2="3" />
+            </svg>
+            <span class="nav-label">کۆکراوە</span>
+        </button>
+
+        <button class="nav-icon" id="navRankings" onclick="showRankings()" aria-label="Rankings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
+            <span class="nav-label">پلەکان</span>
+        </button>
+
+        <button class="nav-icon" id="navLeaderboard" onclick="showLeaderboard()" aria-label="Leaderboard">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 20L6 10" />
+                <path d="M12 20L12 4" />
+                <path d="M18 20L18 14" />
+                <rect x="2" y="20" width="20" height="2" />
+            </svg>
+            <span class="nav-label">پێشەنگان</span>
+        </button>
+
+        <button class="nav-icon" id="navProfile" onclick="handleProfileClick()" aria-label="Profile">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="12" r="4" />
+            </svg>
+            <span class="nav-label">پڕۆفایل</span>
+        </button>
+    </div>
+
+    <!-- ─── HOME PAGE ─── -->
+    <div id="homePage" class="oled-bg purple-glow">
+        <section class="hero-section" id="heroSection">
+            <!-- Hero Logo Overlay - now on the right -->
+            <div class="hero-logo-overlay">
+                <img src="https://cdn.phototourl.com/free/2026-08-14-44ea2253-95ea-466e-80bb-514f8ced0dec.jpg" alt="KurdMDb Logo" id="heroLogoImg" />
+            </div>
+            <div class="swiper hero-swiper" id="heroSwiper">
+                <div class="swiper-wrapper" id="swiperWrapper"></div>
+            </div>
+        </section>
+
+        <!-- ─── ONLINE USERS BADGE ─── -->
+        <div class="relative z-10 flex justify-center py-3 px-5 pointer-events-none">
+            <div class="online-users-badge pointer-events-auto" id="onlineUsersBadge">
+                <span class="dot"></span>
+                <span>
+                    <span class="count" id="onlineCount">0</span>
+                    <span class="label" id="onlineLabel">کەس ئێستا لەسەر ماڵپەڕەکەیە</span>
+                </span>
+            </div>
+        </div>
+
+        <!-- ─── ADS SECTION ─── -->
+        <section class="py-6 px-5 md:px-10 w-full">
+            <div class="max-w-7xl mx-auto">
+                <div class="swiper adsSwiper" id="adsSwiper">
+                    <div class="swiper-wrapper" id="adsWrapper"></div>
+                </div>
+                <div class="mt-6 flex justify-center">
+                    <div style="min-width:300px; min-height:250px;">
+                        <script>
+                            atOptions = {
+                                'key': 'd1d7b23fd10b69ad208d2cf56fb4d180',
+                                'format': 'iframe',
+                                'height': 250,
+                                'width': 300,
+                                'params': {}
+                            };
+                        </script>
+                        <script src="https://conductivebreeds.com/d1d7b23fd10b69ad208d2cf56fb4d180/invoke.js">
+                        </script>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ─── RECOMMENDATIONS SECTION ─── -->
+        <section class="py-16 md:py-24 px-5 md:px-10 w-full" id="recommendationsSection">
+            <div class="max-w-7xl mx-auto">
+                <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+                    <h2 class="section-title mb-0 glow-text">پێشنیارەکان بۆ تۆ</h2>
+                    <div class="flex flex-wrap gap-2" id="recMethodSelector">
+                        <button class="rec-method-badge active" data-method="smart">پێشنیاری زیرەک</button>
+                        <button class="rec-method-badge" data-method="trending">بەرزترین</button>
+                        <button class="rec-method-badge" data-method="top_rated">پلەبەرزترین</button>
+                        <button class="rec-method-badge" data-method="newest">نوێترین</button>
+                        <button class="rec-method-badge" data-method="popular">بەناوبانگ</button>
+                        <button class="rec-method-badge" data-method="random">هەڕەمەکی</button>
+                    </div>
+                </div>
+                <div class="swiper recommendationsSwiper" id="recommendationsSwiper">
+                    <div class="swiper-wrapper" id="recommendationsWrapper"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ─── COLLECTIONS SECTION ─── -->
+        <section class="py-16 md:py-24 px-5 md:px-10 w-full" id="homeCollectionsSection">
+            <div class="max-w-7xl mx-auto">
+                <div class="flex items-center justify-between gap-4 mb-6">
+                    <h2 class="section-title mb-0 glow-text">کۆکراوەکان</h2>
+                    <button class="btn-primary btn-primary-sm" onclick="showCollections()">
+                        بینینی هەموو
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="9 18 15 12 9 6" />
+                        </svg>
+                    </button>
+                </div>
+                <div id="homeCollectionsGrid" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
+            </div>
+        </section>
+
+        <section class="py-16 md:py-24 px-5 md:px-10 w-full" id="trendingSection">
+            <div class="max-w-7xl mx-auto">
+                <h2 class="section-title glow-text">بەرزترینەکان</h2>
+                <div class="swiper trendingSwiper trending-carousel" id="trendingSwiper">
+                    <div class="swiper-wrapper" id="trendingWrapper"></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="py-16 md:py-24 px-5 md:px-10 w-full" id="popularSection">
+            <div class="max-w-7xl mx-auto">
+                <h2 class="section-title glow-text">بەناوبانگترین ئەم هەفتەیە</h2>
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" id="popularGrid"></div>
+            </div>
+        </section>
+
+        <section class="py-16 md:py-24 px-5 md:px-10 w-full" id="topRatedMoviesSection">
+            <div class="max-w-7xl mx-auto">
+                <h2 class="section-title glow-text">پلەبەرزترین فیلمەکان</h2>
+                <div class="swiper topRatedMoviesSwiper trending-carousel" id="topRatedMoviesSwiper">
+                    <div class="swiper-wrapper" id="topRatedMoviesWrapper"></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="py-16 md:py-24 px-5 md:px-10 w-full" id="topRatedAnimationSection">
+            <div class="max-w-7xl mx-auto">
+                <h2 class="section-title glow-text">پلەبەرزترین ئەنیمەیشنەکان</h2>
+                <div class="swiper topRatedAnimationSwiper trending-carousel" id="topRatedAnimationSwiper">
+                    <div class="swiper-wrapper" id="topRatedAnimationWrapper"></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="py-16 md:py-24 px-5 md:px-10 w-full" id="newReleasesSection">
+            <div class="max-w-7xl mx-auto">
+                <h2 class="section-title glow-text">نوێترین بڵاوکراوەکان</h2>
+                <div class="swiper newReleasesSwiper" id="newReleasesSwiper">
+                    <div class="swiper-wrapper" id="newReleasesWrapper"></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="py-16 md:py-24 px-5 md:px-10 w-full" id="recentByCountrySection">
+            <div class="max-w-7xl mx-auto">
+                <h2 class="section-title glow-text">نوێترین فیلمەکان بەپێی وڵات</h2>
+                <div id="recentByCountryContainer"></div>
+            </div>
+        </section>
+
+        <footer class="footer py-16 md:py-20 px-5 md:px-10 mt-0">
+            <div class="max-w-7xl mx-auto">
+                <div class="footer-grid">
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent" id="footerAboutTitle">دەربارەی KurdMDb</h3>
+                        <p class="text-white/60 text-sm leading-relaxed" id="footerAboutText">پلاتفۆرمێکی بینایی پێشکەوتوو.</p>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">پەیوەندی</h3>
+                        <p class="text-white/50 text-sm mb-4" id="footerEmail">contact@kurddb.com</p>
+                        <h3 class="text-lg font-semibold mb-2 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">تایبەتی</h3>
+                        <p class="text-white/50 text-sm">سیاسەتی تایبەتی</p>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">شوێنمان بکە</h3>
+                        <div class="flex gap-4" id="socialLinks">
+                            <a href="#" class="social-icon fb" id="socialFb" target="_blank" rel="noopener noreferrer">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                            </a>
+                            <a href="#" class="social-icon ig" id="socialIg" target="_blank" rel="noopener noreferrer">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+                            </a>
+                            <a href="#" class="social-icon tt" id="socialTt" target="_blank" rel="noopener noreferrer">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-12 pt-8 border-t border-white/10 text-center text-white/30 text-sm flex flex-wrap items-center justify-center gap-4" id="footerCopyright">
+                    <span>&copy; 2026 KurdMDb. هەموو مافەکان پارێزراون.</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- ─── DETAIL PAGE ─── -->
+    <div id="detailPage">
+        <div class="movie-bg" id="movieBg"></div>
+        <header class="absolute top-0 left-0 w-full z-50 flex items-center justify-between p-4 md:p-6">
+            <div>
+                <button class="header-icon-btn" onclick="goBack()" aria-label="Back">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6" />
+                    </svg>
+                </button>
+            </div>
+            <div class="flex items-center gap-3">
+                <button class="header-icon-btn" onclick="handleProfileClick()">
+                    <div class="user-avatar" id="detailAvatar">U</div>
+                </button>
+            </div>
+        </header>
+        <main class="relative z-10 min-h-screen pt-28 pb-20 px-4 md:px-8 lg:px-16 w-full max-w-7xl mx-auto" id="detailMain">
+            <div class="max-w-7xl mx-auto text-center py-20">
+                <div class="skeleton-poster w-48 h-72 mx-auto rounded-2xl"></div>
+                <div class="skeleton-text w-64 mx-auto mt-4 h-8"></div>
+                <div class="skeleton-text w-48 mx-auto mt-2 h-4"></div>
+                <div class="skeleton-text w-32 mx-auto mt-2 h-4"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ─── PROFILE PAGE ─── -->
+    <div id="profilePage" class="oled-bg purple-glow">
+        <div class="movie-bg" style="background-image:url('https://picsum.photos/seed/profile-bg/1920/1080')"></div>
+        <header class="absolute top-0 left-0 w-full z-50 flex items-center justify-between p-4 md:p-6">
+            <div></div>
+            <div class="flex items-center gap-3">
+                <button class="header-icon-btn" onclick="goHome()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6" />
+                    </svg>
+                </button>
+                <button class="header-icon-btn" onclick="handleLogout()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                        <polyline points="16 17 21 12 16 7" />
+                        <line x1="21" y1="12" x2="9" y2="12" />
+                    </svg>
+                </button>
+            </div>
+        </header>
+        <main class="relative z-10 min-h-screen pt-28 pb-20 px-4 md:px-8 lg:px-16 w-full max-w-7xl mx-auto" id="profileMain">
+            <div class="max-w-5xl mx-auto text-center py-20">
+                <div class="skeleton w-24 h-24 rounded-full mx-auto"></div>
+                <div class="skeleton-text w-48 mx-auto mt-4 h-6"></div>
+                <div class="skeleton-text w-32 mx-auto mt-2 h-4"></div>
+                <div class="skeleton-text w-40 mx-auto mt-2 h-3"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ─── WORKS PAGE ─── -->
+    <div id="worksPage" class="oled-bg purple-glow">
+        <div class="movie-bg" style="background-image:url('https://picsum.photos/seed/library-bg/1920/1080')"></div>
+        <header class="absolute top-0 left-0 w-full z-50 flex items-center justify-between p-4 md:p-6">
+            <div></div>
+            <div class="flex items-center gap-3">
+                <button class="header-icon-btn" onclick="goHome()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6" />
+                    </svg>
+                </button>
+                <button class="header-icon-btn" onclick="handleProfileClick()">
+                    <div class="user-avatar" id="worksAvatar">U</div>
+                </button>
+            </div>
+        </header>
+        <main class="relative z-10 min-h-screen pt-24 pb-20 px-4 md:px-8 lg:px-16 w-full max-w-7xl mx-auto">
+            <div class="flex justify-center gap-4 mb-8">
+                <button class="text-xl font-cinematic font-bold pb-2 border-b-2 border-purple-500 text-white" id="tabMovies" onclick="switchLibraryTab('movies')">فیلم</button>
+                <button class="text-xl font-cinematic font-bold pb-2 border-b-2 border-transparent text-white/50" id="tabAnimations" onclick="switchLibraryTab('animations')">ئەنیمەیشن</button>
+            </div>
+            <div class="flex flex-wrap gap-3 justify-center mb-8" id="filterContainer">
+                <select id="filterCountry" class="filter-select" onchange="applyFilters()">
+                    <option value="">هەموو وڵاتان</option>
+                </select>
+                <select id="filterGenre" class="filter-select" onchange="applyFilters()">
+                    <option value="">هەموو جۆرەکان</option>
+                </select>
+                <select id="filterYear" class="filter-select" onchange="applyFilters()">
+                    <option value="">هەموو ساڵان</option>
+                </select>
+                <select id="filterLanguage" class="filter-select" onchange="applyFilters()">
+                    <option value="">هەموو زمانەکان</option>
+                </select>
+                <select id="filterRating" class="filter-select" onchange="applyFilters()">
+                    <option value="">پلە</option>
+                    <option value="9">٩+</option>
+                    <option value="8">٨+</option>
+                    <option value="7">٧+</option>
+                    <option value="6">٦+</option>
+                </select>
+                <select id="filterSort" class="filter-select" onchange="applyFilters()">
+                    <option value="popularity">بەناوبانگی</option>
+                    <option value="rating">پلە</option>
+                    <option value="newest">نوێترین</option>
+                    <option value="oldest">کۆنترین</option>
+                    <option value="views">بینیوی</option>
+                    <option value="trending">بەرزترین</option>
+                </select>
+            </div>
+            <div id="worksGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mb-10"></div>
+            <div id="pagination" class="flex justify-center gap-3 flex-wrap"></div>
+        </main>
+    </div>
+
+    <!-- ─── COLLECTIONS PAGE ─── -->
+    <div id="collectionsPage" class="oled-bg purple-glow">
+        <div class="movie-bg" style="background-image:url('https://picsum.photos/seed/collections-bg/1920/1080')"></div>
+        <header class="absolute top-0 left-0 w-full z-50 flex items-center justify-between p-4 md:p-6">
+            <div></div>
+            <div class="flex items-center gap-3">
+                <button class="header-icon-btn" onclick="goHome()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6" />
+                    </svg>
+                </button>
+                <button class="header-icon-btn" onclick="handleProfileClick()">
+                    <div class="user-avatar" id="collectionsAvatar">U</div>
+                </button>
+            </div>
+        </header>
+        <main class="relative z-10 min-h-screen pt-24 pb-20 px-4 md:px-8 lg:px-16 w-full max-w-7xl mx-auto">
+            <div class="max-w-7xl mx-auto">
+                <h1 class="text-3xl md:text-4xl font-cinematic font-bold mb-6 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent glow-text">
+                    هەموو کۆکراوەکان
+                </h1>
+                <p class="text-white/50 text-sm mb-8">هەموو کۆکراوەکانی فیلم و ئەنیمەیشن لە یەک شوێن.</p>
+                <div id="allCollectionsGrid" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
+                <div id="collectionsPagination" class="collections-pagination"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ─── COLLECTION DETAIL PAGE ─── -->
+    <div id="collectionDetailPage" class="oled-bg purple-glow">
+        <div class="movie-bg" style="background-image:url('https://picsum.photos/seed/collection-detail-bg/1920/1080')"></div>
+        <header class="absolute top-0 left-0 w-full z-50 flex items-center justify-between p-4 md:p-6">
+            <div></div>
+            <div class="flex items-center gap-3">
+                <button class="header-icon-btn" onclick="goHome()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6" />
+                    </svg>
+                </button>
+                <button class="header-icon-btn" onclick="handleProfileClick()">
+                    <div class="user-avatar" id="collectionDetailAvatar">U</div>
+                </button>
+            </div>
+        </header>
+        <main class="relative z-10 min-h-screen pt-24 pb-20 px-4 md:px-8 lg:px-16 w-full max-w-7xl mx-auto">
+            <div class="max-w-7xl mx-auto" id="collectionDetailMain">
+                <div class="text-center py-20">
+                    <div class="skeleton w-full h-64 rounded-2xl mb-4"></div>
+                    <div class="skeleton-text w-64 mx-auto mt-4 h-8"></div>
+                    <div class="skeleton-text w-96 mx-auto mt-2 h-4"></div>
+                    <div class="skeleton-text w-32 mx-auto mt-2 h-4"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ─── RANKINGS PAGE ─── -->
+    <div id="rankingsPage" class="oled-bg purple-glow">
+        <div class="movie-bg" style="background-image:url('https://picsum.photos/seed/rankings-bg/1920/1080')"></div>
+        <header class="absolute top-0 left-0 w-full z-50 flex items-center justify-between p-4 md:p-6">
+            <div></div>
+            <div class="flex items-center gap-3">
+                <button class="header-icon-btn" onclick="goHome()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6" />
+                    </svg>
+                </button>
+                <button class="header-icon-btn" onclick="handleProfileClick()">
+                    <div class="user-avatar" id="rankingsAvatar">U</div>
+                </button>
+            </div>
+        </header>
+        <main class="relative z-10 min-h-screen pt-24 pb-20 px-4 md:px-8 lg:px-16 w-full max-w-7xl mx-auto">
+            <div class="max-w-7xl mx-auto">
+                <h1 class="text-3xl md:text-4xl font-cinematic font-bold mb-6 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent glow-text">
+                    پلەکان
+                </h1>
+                <div class="flex flex-wrap gap-3 justify-start mb-6" id="rankingsFilterContainer">
+                    <button class="rec-method-badge active" data-rank-tab="top_movies">باشترین فیلمەکان</button>
+                    <button class="rec-method-badge" data-rank-tab="top_animations">باشترین ئەنیمەیشنەکان</button>
+                    <button class="rec-method-badge" data-rank-tab="trending_movies">بەرزترین فیلمەکان</button>
+                    <button class="rec-method-badge" data-rank-tab="trending_animations">بەرزترین ئەنیمەیشنەکان</button>
+                </div>
+                <div class="flex flex-wrap gap-3 justify-start mb-8">
+                    <select id="rankCountry" class="filter-select" onchange="applyRankFilters()">
+                        <option value="">هەموو وڵاتان</option>
+                    </select>
+                    <select id="rankGenre" class="filter-select" onchange="applyRankFilters()">
+                        <option value="">هەموو جۆرەکان</option>
+                    </select>
+                    <select id="rankYear" class="filter-select" onchange="applyRankFilters()">
+                        <option value="">هەموو ساڵان</option>
+                    </select>
+                    <select id="rankType" class="filter-select" onchange="applyRankFilters()">
+                        <option value="">هەموو جۆرەکان</option>
+                        <option value="Movie">فیلم</option>
+                        <option value="Animation">ئەنیمەیشن</option>
+                    </select>
+                </div>
+                <div id="rankingsList" class="space-y-3"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ─── LEADERBOARD PAGE ─── -->
+    <div id="leaderboardPage" class="oled-bg purple-glow">
+        <div class="movie-bg" style="background-image:url('https://picsum.photos/seed/leaderboard-bg/1920/1080')"></div>
+        <header class="absolute top-0 left-0 w-full z-50 flex items-center justify-between p-4 md:p-6">
+            <div></div>
+            <div class="flex items-center gap-3">
+                <button class="header-icon-btn" onclick="goHome()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6" />
+                    </svg>
+                </button>
+                <button class="header-icon-btn" onclick="handleProfileClick()">
+                    <div class="user-avatar" id="leaderboardAvatar">U</div>
+                </button>
+            </div>
+        </header>
+        <main class="relative z-10 min-h-screen pt-24 pb-20 px-4 md:px-8 lg:px-16 w-full max-w-7xl mx-auto">
+            <div class="max-w-4xl mx-auto">
+                <h1 class="text-3xl md:text-4xl font-cinematic font-bold mb-6 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent glow-text">
+                    پێشەنگان
+                </h1>
+                <p class="text-white/50 text-sm mb-8">پلەبەرزترین بەکارهێنەران بەپێی ئاست و خاڵەکانی ئەزموون.</p>
+                <div id="leaderboardList" class="space-y-3"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ─── RECOMMENDATIONS PAGE ─── -->
+    <div id="recommendationsPage" class="oled-bg purple-glow">
+        <div class="movie-bg" style="background-image:url('https://picsum.photos/seed/recommendations-bg/1920/1080')"></div>
+        <header class="absolute top-0 left-0 w-full z-50 flex items-center justify-between p-4 md:p-6">
+            <div></div>
+            <div class="flex items-center gap-3">
+                <button class="header-icon-btn" onclick="goHome()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6" />
+                    </svg>
+                </button>
+                <button class="header-icon-btn" onclick="handleProfileClick()">
+                    <div class="user-avatar" id="recommendationsAvatar">U</div>
+                </button>
+            </div>
+        </header>
+        <main class="relative z-10 min-h-screen pt-24 pb-20 px-4 md:px-8 lg:px-16 w-full max-w-7xl mx-auto">
+            <div class="max-w-7xl mx-auto">
+                <h1 class="text-3xl md:text-4xl font-cinematic font-bold mb-6 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent glow-text">
+                    پێشنیارەکان
+                </h1>
+                <p class="text-white/50 text-sm mb-8">جۆری ناوەڕۆک، وڵات، ژانەر و ساڵ دیاری بکە، پاشان کلیک لە دوگمەی پێشنیار بکە بۆ وەرگرتنی پێشنیارە تایبەتەکان.</p>
+
+                <div class="glass-panel p-6 md:p-8 mb-8">
+                    <div class="rec-filter-group">
+                        <select id="recType" class="filter-select">
+                            <option value="all">هەموو جۆرەکان</option>
+                            <option value="Movie">فیلم</option>
+                            <option value="Animation">ئەنیمەیشن</option>
+                        </select>
+                        <select id="recCountry" class="filter-select">
+                            <option value="">هەموو وڵاتان</option>
+                        </select>
+                        <select id="recGenre" class="filter-select">
+                            <option value="">هەموو ژانەرەکان</option>
+                        </select>
+                        <select id="recYear" class="filter-select">
+                            <option value="">هەموو ساڵان</option>
+                        </select>
+                        <button class="btn-primary" onclick="generateRecommendations()">
+                            <span>پێشنیار</span>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                                <polyline points="17 6 23 6 23 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    <p class="text-xs text-white/40 mt-4 text-center">پێشنیارەکان تەنها یەک ناوەڕۆک لە خۆ دەگرن و بە شێوەیەکی نایاب و ئەنیمەیشنی پێشکەش دەکرێن.</p>
+                </div>
+
+                <div id="recResultsContainer">
+                    <div id="recSingleResult"></div>
+                    <div id="recStatus" class="text-white/50 text-center py-6">هیچ پێشنیارێک نیە. تکایە پاڵاوتنەکان دیاری بکە و کلیک لە پێشنیار بکە.</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ─── GLASS HEADER ─────────────────────────────────────────── -->
+    <header class="glass-header hidden-header" id="glassHeader">
+        <div class="glass-header-bg"></div>
+        <div class="header-content">
+            <span class="hero-logo" onclick="goHome()">
+                <img src="https://cdn.phototourl.com/free/2026-08-14-44ea2253-95ea-466e-80bb-514f8ced0dec.jpg" alt="KurdMDb" id="glassLogoImg" />
+            </span>
+            <div class="flex items-center gap-3">
+                <button class="header-icon-btn" id="searchIconBtn2" aria-label="Search">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                </button>
+                <button class="header-icon-btn" onclick="handleProfileClick()">
+                    <div class="user-avatar" id="glassAvatar">U</div>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ================================================================
+    MAIN APPLICATION SCRIPT
+    ================================================================ -->
+
+    <!-- ─── EXTERNAL LIBS (moved to body for correct load order) ─── -->
+    <!-- Swiper (with SRI, defer) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/14.0.5/swiper-bundle.min.js" 
+            integrity="sha512-DMunOu/iiGaR/Jq+asCspQ+ip9ASQi+bUl2Ct0ByLOoIOGrl9hNG/+aBZGKZ38jjOP/YCckpogtuhq3L0GLb5g==" 
+            crossorigin="anonymous" referrerpolicy="no-referrer" defer></script>
+    <!-- GSAP (without defer to ensure it's available before main script) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.15.0/gsap.min.js" 
+            integrity="sha512-GJ07/MKsATTFk2vf2brRm9tZwqiLwN2YLl4nxWcrQi+l342DYlHYTZ4B2MxXALLoCgbR6r66UavcIcYhP/bxZg==" 
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- ScrollTrigger (still from jsdelivr, defer) -->
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/ScrollTrigger.min.js" defer></script>
+    <!-- Supabase (with SRI, defer) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" 
+            integrity="sha384-l8ah+VgaWtk1mvOe9VC+OirC6qHFF4yH7l7mKRidV9MSti3E9F463bMp6ZVN4kuC" 
+            crossorigin="anonymous" defer></script>
+
+    <!-- ─── MAIN APP SCRIPT (wrapped in function to defer execution) ─── -->
+    <!-- ===== MAIN APP SCRIPTS (extracted from the inline runApp() block) =====
+         api.js declares config/state/all fetch-Supabase functions.
+         app.js declares all render/UI functions and calls init().
+         Order matters: api.js MUST load before app.js since app.js
+         relies on api.js's top-level declarations (no modules/IIFE
+         are used, so both share the page's single global scope). -->
+    <script src="api.js"></script>
+    <script src="app.js"></script>
+
+</body>
+</html>
