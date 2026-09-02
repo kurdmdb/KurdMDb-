@@ -4143,13 +4143,15 @@
             flex-wrap: wrap;
         }
         .actor-sub .badge,
-        .company-sub .badge {
+        .company-sub .badge,
+        .badge {
             background: rgba(139, 92, 246, 0.15);
-            padding: 1px 10px;
+            padding: 3px 12px;
             border-radius: 20px;
-            font-size: 0.6rem;
+            font-size: 0.7rem;
             color: #C084FC;
             border: 1px solid rgba(139, 92, 246, 0.15);
+            display: inline-block;
         }
         .company-sub .country-tag {
             color: #fbbf24;
@@ -5417,7 +5419,7 @@
         <div class="glass-header-bg"></div>
         <div class="header-content">
             <span class="hero-logo" onclick="goHome()">
-                <img src="https://cdn.phototourl.com/free/2026-08-25-cc92c9d6-1fe7-49da-b0c9-5ea29a152178.jpg" alt="KurdMDb" id="glassLogoImg" />
+                <img src="https://cdn.phototourl.com/free/2026-08-25-cc92c9d6-1fe7-49da-b0c9-5ea29a152178.jpg" alt="KurdMDb" id="glassLogoImg" loading="lazy" decoding="async" />
             </span>
             <div class="flex items-center gap-3">
                 <button class="header-icon-btn" id="searchIconBtn2" aria-label="Search">
@@ -5814,13 +5816,17 @@
             }
 
             function goBack() {
-                if (window.history.length > 1 && document.referrer && document.referrer.includes(window.location.hostname)) {
-                    window.history.back();
-                } else if (window.history.length > 1) {
-                    window.history.back();
-                } else {
-                    goHome();
-                }
+                // Previously this called window.history.back() and relied on the
+                // browser's popstate event + this app's own state-shape assumptions
+                // to land back on the right page. That chain has edge cases (e.g. a
+                // detail page reached via a direct/shared link, or via a route whose
+                // history entry doesn't carry the exact state shape this app expects)
+                // where the first click updates the URL/history position but nothing
+                // renders, so a second click was needed before the visible page
+                // actually changed. Going home directly, deterministically, and in a
+                // single step removes that dependency entirely — a single tap on the
+                // back arrow now always closes the detail page immediately.
+                goHome();
             }
             window.goBack = goBack;
 
@@ -5828,14 +5834,32 @@
             window.showDetail = function(idOrSlug, type) {
                 const all = [...allMoviesData, ...allAnimationsData, ...allAnimeData];
                 let item = null;
-                if (typeof idOrSlug === 'number' || !isNaN(Number(idOrSlug))) {
-                    item = all.find(m => m.id === Number(idOrSlug));
-                }
-                if (!item) {
+                // Match by slug + type FIRST. This matters because movies, animations and
+                // anime are separate Supabase tables, each with their own independent
+                // numeric "id" sequence — e.g. a movie and an anime can both have id=7.
+                // When an item has no real slug, fetchX() falls back to using its bare
+                // numeric id as the "slug" (slug: m.slug || String(m.id)). If we matched
+                // by numeric id alone (searched across the combined, movies-first array)
+                // before checking type, clicking an anime card like that could resolve to
+                // an unrelated movie that happens to share the same numeric id — e.g.
+                // clicking "Your Name" opening "Toy Story". Checking type alongside the
+                // slug/id here prevents that cross-table collision.
+                if (type) {
                     item = all.find(m => (m.slug || String(m.id)) === String(idOrSlug) && (m.type || '').toLowerCase() === type
                         .toLowerCase());
                 }
+                // Fallback: slug/id match within the same type, ignoring case differences
+                // in how "type" was passed in.
+                if (!item && type) {
+                    item = all.find(m => String(m.id) === String(idOrSlug) && (m.type || '').toLowerCase() === type
+                        .toLowerCase());
+                }
+                // Last resort: no type given, or nothing matched above — fall back to a
+                // slug-only match, then a bare numeric-id-only match across all types.
                 if (!item) item = all.find(m => (m.slug || String(m.id)) === String(idOrSlug));
+                if (!item && (typeof idOrSlug === 'number' || !isNaN(Number(idOrSlug)))) {
+                    item = all.find(m => m.id === Number(idOrSlug));
+                }
                 if (!item) { showToast('ناوەڕۆک نەدۆزرایەوە.', 'error'); return; }
                 const path = getPathForItem(item);
                 if (getRoutePath() !== path) {
@@ -6315,9 +6339,14 @@
                 let subtitleBadge = '';
                 if (hasKurdishSubtitle) {
                     const websiteIds = item.website_ids || [];
-                    let sitesToShow = [];
-                    if (websiteIds.length > 0) sitesToShow = allWebsitesData.filter(site => websiteIds.includes(site.id));
-                    else sitesToShow = allWebsitesData;
+                    // Only show the specific websites actually selected for this item.
+                    // Previously, when website_ids was empty this fell back to showing
+                    // *every* registered website — so any item with the Kurdish-subtitle
+                    // flag on but no websites chosen yet displayed all sites as if each
+                    // one had it, regardless of what was actually selected. An empty
+                    // selection should mean "none specified yet", not "all of them".
+                    const sitesToShow = websiteIds.length > 0 ?
+                        allWebsitesData.filter(site => websiteIds.includes(site.id)) : [];
                     let sitesHtml = '';
                     if (sitesToShow.length > 0) {
                         sitesHtml = sitesToShow.map(site => `
@@ -6327,7 +6356,7 @@
                                 </a>
                             `).join('');
                     } else {
-                        sitesHtml = '<span class="text-white/50 text-sm">هیچ وێبسایتێک تۆمار نەکراوە</span>';
+                        sitesHtml = '<span class="text-white/50 text-sm">هێشتا هیچ وێبسایتێک بۆ ئەم بەرهەمە دیاری نەکراوە</span>';
                     }
                     subtitleBadge = `
                             <div class="subtitle-badge mt-4 flex flex-wrap items-center gap-2">
@@ -8158,11 +8187,26 @@
                         allActorsData = [];
                         return allActorsData;
                     }
+                    // Small helper: Supabase may return array/json columns as native
+                    // arrays or as JSON-encoded strings depending on the column type —
+                    // normalize either shape to a plain array so rendering code doesn't
+                    // need to care which one it got.
+                    const toArray = (v) => {
+                        if (Array.isArray(v)) return v;
+                        if (typeof v === 'string' && v) {
+                            try { const parsed = JSON.parse(v); return Array.isArray(parsed) ? parsed : []; } catch (_) { return []; }
+                        }
+                        return [];
+                    };
                     const actors = (data || []).map(a => ({
                         ...a,
                         slug: a.slug || String(a.id),
-                        known_for: Array.isArray(a.known_for) ? a.known_for : (a.known_for ? JSON.parse(a.known_for) :
-                            [])
+                        known_for: toArray(a.known_for),
+                        // Biography breakdown fields — optional columns, default to safe
+                        // empty values when not present on the actors table yet.
+                        awards_won: toArray(a.awards_won),
+                        awards_nominated: toArray(a.awards_nominated),
+                        interests: toArray(a.interests).length ? toArray(a.interests) : (a.interests || '')
                     }));
                     allActorsData = actors;
                     cacheSet('actors', allActorsData);
@@ -8774,7 +8818,12 @@
                 const poster = item.poster_url || '';
                 const title = sanitizeText(item.title || 'Untitled');
                 const slug = sanitizeText(item.slug || item.id);
-                const typeDisplay = (item.type || 'Movie');
+                // Prefer the caller-provided type (e.g. renderNewestAnime always passes
+                // 'Anime'), falling back to item.type only if the caller didn't specify one.
+                // Previously this ignored the "type" parameter entirely and always
+                // recomputed it from item.type — harmless while item.type was always
+                // correct, but a silent trap for future data/rendering changes.
+                const typeDisplay = (type || item.type || 'Movie');
 
                 let topBadge = '';
                 if (isTop250Anime(item)) {
@@ -10553,6 +10602,19 @@
                 const trendingOrder = actor.trending_order || null;
                 const popularityRank = actor.popularity_rank || null;
 
+                // ─── Biography breakdown fields (all optional — each section only
+                // renders if the corresponding data exists on the actor record) ───
+                const isDeceased = actor.is_deceased === true || !!actor.death_date;
+                const deathDate = sanitizeText(actor.death_date || '');
+                const education = sanitizeText(actor.education || '');
+                const interests = Array.isArray(actor.interests) ? actor.interests :
+                    (typeof actor.interests === 'string' && actor.interests ? actor.interests.split(',').map(s => s
+                        .trim()).filter(Boolean) : []);
+                const firstAppearance = sanitizeText(actor.first_appearance || '');
+                const breakthroughRole = sanitizeText(actor.breakthrough_role || '');
+                const awardsWon = Array.isArray(actor.awards_won) ? actor.awards_won : [];
+                const awardsNominated = Array.isArray(actor.awards_nominated) ? actor.awards_nominated : [];
+
                 // Count productions by type
                 let movieCount = 0,
                     animationCount = 0,
@@ -10620,8 +10682,91 @@
                         `;
                 }
 
+                // ─── Voice roles in animation/anime (derived from productions) ───
+                const voiceRoleProductions = productions.filter(p => {
+                    const t = (p.type || '').toLowerCase();
+                    return t === 'animation' || t === 'anime';
+                });
+                let voiceRolesHTML = '';
+                if (voiceRoleProductions.length > 0) {
+                    voiceRolesHTML = `
+                            <div class="detail-section">
+                                <h2 class="detail-section-title">ڕۆڵی دەنگ لە ئەنیمەیشن و ئەنیمی</h2>
+                                <div class="glass-panel p-6 md:p-8">
+                                    <div class="production-grid">
+                                        ${voiceRoleProductions.slice(0, 12).map(p => `
+                                            <div class="production-item" onclick="showDetail('${sanitizeText(p.slug || p.id)}', '${sanitizeText(p.type || 'Animation')}')">
+                                                ${p.poster_url ? `<img src="${sanitizeUrl(p.poster_url)}" alt="${sanitizeText(p.title)}" loading="lazy" decoding="async" onerror="this.style.display='none'" />` : '<div class="w-full aspect-[2/3] bg-gray-800 flex items-center justify-center text-white/20 text-xs">No Poster</div>'}
+                                                <div class="prod-title safe-text">${sanitizeText(p.title || 'Untitled')}</div>
+                                                ${p.role ? `<div class="prod-type safe-text">🎙 ${sanitizeText(p.role)}</div>` : `<div class="prod-type">${sanitizeText(p.type || '')}</div>`}
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                    ${voiceRoleProductions.length > 12 ? `<p class="text-white/40 text-sm mt-4 text-center">+ ${voiceRoleProductions.length - 12} زیاتر</p>` : ''}
+                                </div>
+                            </div>
+                        `;
+                }
+
+                // ─── TV series participated in (media_format === 'series'/'tv', or
+                // explicit is_series flag on the production record) ───
+                const seriesProductions = productions.filter(p => {
+                    const fmt = (p.media_format || '').toLowerCase();
+                    return p.is_series === true || fmt === 'series' || fmt === 'tv' || fmt === 'tv_series';
+                });
+                let seriesHTML = '';
+                if (seriesProductions.length > 0) {
+                    seriesHTML = `
+                            <div class="detail-section">
+                                <h2 class="detail-section-title">زنجیرەکانی بەشداریکردووە</h2>
+                                <div class="glass-panel p-6 md:p-8">
+                                    <div class="production-grid">
+                                        ${seriesProductions.slice(0, 12).map(p => `
+                                            <div class="production-item" onclick="showDetail('${sanitizeText(p.slug || p.id)}', '${sanitizeText(p.type || 'Movie')}')">
+                                                ${p.poster_url ? `<img src="${sanitizeUrl(p.poster_url)}" alt="${sanitizeText(p.title)}" loading="lazy" decoding="async" onerror="this.style.display='none'" />` : '<div class="w-full aspect-[2/3] bg-gray-800 flex items-center justify-center text-white/20 text-xs">No Poster</div>'}
+                                                <div class="prod-title safe-text">${sanitizeText(p.title || 'Untitled')}</div>
+                                                <div class="prod-type">${sanitizeText(p.type || '')}</div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                    ${seriesProductions.length > 12 ? `<p class="text-white/40 text-sm mt-4 text-center">+ ${seriesProductions.length - 12} زیاتر</p>` : ''}
+                                </div>
+                            </div>
+                        `;
+                }
+
+                // ─── Awards won / nominated (starred, gold) ───
+                let awardsHTML = '';
+                if (awardsWon.length > 0 || awardsNominated.length > 0) {
+                    awardsHTML = `
+                            <div class="detail-section">
+                                <h2 class="detail-section-title">خەڵاتەکان</h2>
+                                <div class="glass-panel p-6 md:p-8 space-y-4">
+                                    ${awardsWon.length > 0 ? `
+                                        <div>
+                                            <p class="text-white/50 text-xs mb-2">بەدەستهێنراو</p>
+                                            <ul class="space-y-1">
+                                                ${awardsWon.map(a => `<li class="text-sm safe-text" style="color:#FBBF24;">★ ${sanitizeText(typeof a === 'string' ? a : (a.name || a.title || ''))}${a && a.year ? ` <span style="color:rgba(255,255,255,0.4);">(${sanitizeText(String(a.year))})</span>` : ''}</li>`).join('')}
+                                            </ul>
+                                        </div>
+                                    ` : ''}
+                                    ${awardsNominated.length > 0 ? `
+                                        <div>
+                                            <p class="text-white/50 text-xs mb-2">کاندیدکراو</p>
+                                            <ul class="space-y-1">
+                                                ${awardsNominated.map(a => `<li class="text-sm text-white/70 safe-text">☆ ${sanitizeText(typeof a === 'string' ? a : (a.name || a.title || ''))}${a && a.year ? ` <span style="color:rgba(255,255,255,0.4);">(${sanitizeText(String(a.year))})</span>` : ''}</li>`).join('')}
+                                            </ul>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        `;
+                }
+
                 const ageDisplay = age !== null ? `${age} ساڵ` : 'N/A';
                 const birthDisplay = birthYear ? `${birthYear}` : 'N/A';
+                const lifeStatusDisplay = isDeceased ?
+                    `کۆچی دوایی کردووە${deathDate ? ` (${deathDate})` : ''}` : 'لەژیاندا ماوە';
 
                 let trendingDetailBadge = '';
                 if (isTrending && trendingOrder) {
@@ -10663,23 +10808,50 @@
                                     <div class="glass-panel p-6 md:p-8 lg:p-10 space-y-4">
                                         <h1 class="actor-detail-name safe-text" style="font-size:1.8rem;">${nameEn}</h1>
                                         ${nameKu && nameKu !== nameEn ? `<p class="actor-detail-sub safe-text">${nameKu}</p>` : ''}
-                                        ${genderDisplay ? `<p class="text-white/60 text-sm">ڕەگەز: ${genderDisplay}</p>` : ''}
+                                        <div class="flex flex-wrap items-center gap-3">
+                                            ${genderDisplay ? `<span class="text-white/60 text-sm">ڕەگەز: ${genderDisplay}</span>` : ''}
+                                            <span class="text-sm ${isDeceased ? 'text-white/50' : ''}" style="${isDeceased ? '' : 'color:#4ADE80;'}">${isDeceased ? '🕊️' : '🟢'} ${lifeStatusDisplay}</span>
+                                        </div>
                                         <div class="actor-stats-grid">
                                             <div class="actor-stat-card"><div class="num">${creditCount}</div><div class="label">کۆی بەرهەم</div></div>
                                             <div class="actor-stat-card"><div class="num">${movieCount}</div><div class="label">فیلم</div></div>
                                             <div class="actor-stat-card"><div class="num">${animationCount}</div><div class="label">ئەنیمەیشن</div></div>
                                             ${country === 'Japan' || country === 'یابان' ? `<div class="actor-stat-card"><div class="num">${animeCount}</div><div class="label">ئەنیمی</div></div>` : ''}
                                         </div>
-                                        <div class="grid grid-cols-2 gap-4 text-sm">
-                                            <div><span class="text-white/50">وڵات:</span> ${country || 'N/A'}</div>
-                                            <div><span class="text-white/50">شاری لەدایکبوون:</span> ${birthCity || 'N/A'}</div>
-                                            <div><span class="text-white/50">ساڵی لەدایکبوون:</span> ${birthDisplay}</div>
-                                            <div><span class="text-white/50">تەمەن:</span> ${ageDisplay}</div>
+
+                                        <!-- ─── Biography breakdown: each fact in its own box ─── -->
+                                        <div class="detail-grid-2col text-sm" style="margin-top:0.5rem;">
+                                            <div class="info-row"><span class="text-white/50">ساڵی لەدایکبوون:</span> <span class="safe-text">${birthDisplay}</span></div>
+                                            <div class="info-row"><span class="text-white/50">وڵاتی لەدایکبوون:</span> <span class="safe-text">${country || 'N/A'}</span></div>
+                                            <div class="info-row"><span class="text-white/50">شاری لەدایکبوون:</span> <span class="safe-text">${birthCity || 'N/A'}</span></div>
+                                            <div class="info-row"><span class="text-white/50">تەمەن:</span> <span class="safe-text">${ageDisplay}</span></div>
+                                            ${education ? `<div class="info-row"><span class="text-white/50">ئاستی خوێندن:</span> <span class="safe-text">${education}</span></div>` : ''}
+                                            ${firstAppearance ? `<div class="info-row"><span class="text-white/50">یەکەم دەرکەوتن:</span> <span class="safe-text">${firstAppearance}</span></div>` : ''}
                                         </div>
+
+                                        ${breakthroughRole ? `
+                                            <div class="mt-2 pt-3 border-t border-white/10">
+                                                <p class="text-white/50 text-xs mb-1">ڕۆڵی سەرەکی سەرەتایی (سەرنجڕاکێش)</p>
+                                                <p class="text-sm safe-text" style="color:#FBBF24;">🎬 ${breakthroughRole}</p>
+                                            </div>
+                                        ` : ''}
+
+                                        ${interests.length > 0 ? `
+                                            <div class="mt-2 pt-3 border-t border-white/10">
+                                                <p class="text-white/50 text-xs mb-2">خولیا و ئارەزووەکان</p>
+                                                <div class="flex flex-wrap gap-2">
+                                                    ${interests.map(i => `<span class="badge safe-text">${sanitizeText(i)}</span>`).join('')}
+                                                </div>
+                                            </div>
+                                        ` : ''}
+
                                         ${biography ? `<p class="text-white/70 leading-relaxed safe-text mt-4 border-t border-white/10 pt-4">${biography}</p>` : ''}
                                     </div>
                                 </div>
                             </div>
+                            ${awardsHTML}
+                            ${voiceRolesHTML}
+                            ${seriesHTML}
                             ${productionsHTML}
                         </div>
                     `);
