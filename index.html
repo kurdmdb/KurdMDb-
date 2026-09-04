@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="google-adsense-account" content="ca-pub-2680556336783712">
 
     <!-- ===== CSP (was previously dead code inside a <style> comment — now actually enforced) ===== -->
     <meta http-equiv="Content-Security-Policy" content="
@@ -3721,6 +3722,36 @@
             }
         }
 
+        /* Nominated variant: same layout as .award-row, muted to a neutral tone
+           so "won" (gold) and "nominated" (silver/grey) read as visually distinct
+           at a glance instead of looking identical. */
+        .award-row.is-nominated {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: none;
+        }
+        .award-row.is-nominated:hover {
+            border-color: rgba(255, 255, 255, 0.22);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.06);
+        }
+        .award-row.is-nominated .award-trophy {
+            filter: none;
+            opacity: 0.75;
+        }
+        .award-row.is-nominated .award-name {
+            color: rgba(255, 255, 255, 0.85);
+            text-shadow: none;
+        }
+        .award-group-label {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.5);
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
         .collections-pagination {
             display: flex;
             justify-content: center;
@@ -4254,6 +4285,186 @@
             font-size: 0.7rem;
             color: rgba(255, 255, 255, 0.5);
             margin-top: 2px;
+        }
+
+        /* ─── Actor biography facts (redesign of the old plain .info-row list
+           for this one section) — icon-fronted chips instead of flat text rows,
+           so each fact reads at a glance instead of blurring into a grey list. ─── */
+        .life-status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px 6px 8px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .life-status-pill.is-alive {
+            background: rgba(74, 222, 128, 0.12);
+            border: 1px solid rgba(74, 222, 128, 0.3);
+            color: #4ADE80;
+        }
+        .life-status-pill.is-deceased {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: rgba(255, 255, 255, 0.6);
+        }
+        .life-status-pill .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .life-status-pill.is-alive .dot {
+            background: #4ADE80;
+            box-shadow: 0 0 8px rgba(74, 222, 128, 0.7);
+        }
+        .life-status-pill.is-deceased .dot {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        .bio-facts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 10px;
+        }
+        .bio-fact-chip {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            padding: 10px 14px;
+            transition: 0.3s;
+        }
+        .bio-fact-chip:hover {
+            background: rgba(139, 92, 246, 0.06);
+            border-color: rgba(139, 92, 246, 0.2);
+        }
+        .bio-fact-chip .icon {
+            font-size: 1.05rem;
+            line-height: 1.3;
+            flex-shrink: 0;
+            filter: grayscale(0.15);
+        }
+        .bio-fact-chip .content {
+            min-width: 0;
+        }
+        .bio-fact-chip .fact-label {
+            font-size: 0.68rem;
+            color: rgba(255, 255, 255, 0.45);
+            margin-bottom: 1px;
+        }
+        .bio-fact-chip .fact-value {
+            font-size: 0.88rem;
+            color: #fff;
+            font-weight: 600;
+            line-height: 1.3;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .bio-subsection {
+            margin-top: 4px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .bio-subsection-title {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        .breakthrough-highlight {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(251, 191, 36, 0.02));
+            border: 1px solid rgba(251, 191, 36, 0.2);
+            border-radius: 14px;
+            padding: 12px 16px;
+        }
+        .breakthrough-highlight .icon {
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+        .breakthrough-highlight .text {
+            color: #FBBF24;
+            font-weight: 600;
+            font-size: 0.92rem;
+        }
+
+        @media (max-width: 640px) {
+            .bio-facts-grid {
+                grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            }
+        }
+
+        /* Interest cards: real data is "Topic: description" full sentences, not
+           short tags, so these are sized to comfortably hold wrapped prose rather
+           than reusing the single-word .badge pill. */
+        .interests-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 10px;
+        }
+        .interest-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            padding: 12px 16px;
+        }
+        .interest-card .topic {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #C084FC;
+            margin-bottom: 3px;
+        }
+        .interest-card .topic::before {
+            content: '';
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #C084FC;
+            flex-shrink: 0;
+        }
+        .interest-card .desc {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.5;
+        }
+
+        /* For biography fields that are full paragraphs (education, first_appearance)
+           rather than short facts — confirmed 94-323 chars across every actor sampled,
+           so these get readable prose treatment instead of being squeezed into a
+           short-value fact chip. */
+        .bio-prose-block {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.025);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            padding: 12px 16px;
+        }
+        .bio-prose-block .icon {
+            font-size: 1.1rem;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+        .bio-prose-block .text {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.75);
+            line-height: 1.6;
         }
 
         .company-detail-website {
@@ -5303,8 +5514,10 @@
                 <div class="flex flex-wrap gap-3 justify-start mb-6" id="rankingsFilterContainer">
                     <button class="rec-method-badge active" data-rank-tab="top_movies">باشترین فیلمەکان</button>
                     <button class="rec-method-badge" data-rank-tab="top_animations">باشترین ئەنیمەیشنەکان</button>
+                    <button class="rec-method-badge" data-rank-tab="top_anime">باشترین ئەنیمیەکان</button>
                     <button class="rec-method-badge" data-rank-tab="trending_movies">بەرزترین فیلمەکان</button>
                     <button class="rec-method-badge" data-rank-tab="trending_animations">بەرزترین ئەنیمەیشنەکان</button>
+                    <button class="rec-method-badge" data-rank-tab="trending_anime">بەرزترین ئەنیمیەکان</button>
                 </div>
                 <div class="flex flex-wrap gap-3 justify-start mb-8">
                     <select id="rankCountry" class="filter-select" onchange="applyRankFilters()">
@@ -5656,6 +5869,19 @@
                 return sanitizeText(text);
             }
 
+            // Splits an actor interest entry like "وەرزش: حەزی بە یارییە ئاوییەکان و
+            // وەرزش هەیە" into { topic: 'وەرزش', desc: 'حەزی بە یارییە ئاوییەکان...' }.
+            // Splits on the FIRST colon only, since the description half may itself
+            // contain further punctuation. Falls back to { topic: <whole string>, desc: '' }
+            // if no colon is present, so unexpected data shapes still render sensibly
+            // instead of breaking.
+            function splitInterestEntry(entry) {
+                const s = String(entry || '');
+                const idx = s.indexOf(':');
+                if (idx === -1) return { topic: s.trim(), desc: '' };
+                return { topic: s.slice(0, idx).trim(), desc: s.slice(idx + 1).trim() };
+            }
+
             // ─── TOAST SYSTEM ──────────────────────────────────────────────
             function showToast(message, type = 'info', duration = 3500) {
                 const container = document.getElementById('toastContainer');
@@ -5823,9 +6049,31 @@
                 // history entry doesn't carry the exact state shape this app expects)
                 // where the first click updates the URL/history position but nothing
                 // renders, so a second click was needed before the visible page
-                // actually changed. Going home directly, deterministically, and in a
-                // single step removes that dependency entirely — a single tap on the
-                // back arrow now always closes the detail page immediately.
+                // actually changed. That was then "fixed" by always calling goHome()
+                // instead — deterministic, but wrong whenever the back button is
+                // reached from anywhere other than home directly (e.g. actor page →
+                // "back" should return to the movie you came from, not jump past it
+                // to home; company page → "back" should return to the actor or movie
+                // that linked to it).
+                //
+                // This restores real back-to-the-previous-page behavior without
+                // reintroducing the original popstate/state-shape unreliability: it
+                // reads window.history.state, which this app's own setRoutePath()
+                // always writes an explicit {type, slug/id} shape into right before
+                // pushing (see setRoutePath / showDetail / showActorDetail /
+                // showCompanyDetail / showCollectionDetail / showReleaseCalendar),
+                // so the shape is guaranteed rather than assumed. Going one entry back
+                // in history re-triggers this app's own popstate handler, which reads
+                // that same guaranteed state and renders synchronously — no dependency
+                // on the browser's timing, and no second click needed.
+                const state = window.history.state;
+                if (state && state.type && state.type !== 'home') {
+                    window.history.back();
+                    return;
+                }
+                // No usable prior state (e.g. this page was opened directly via a
+                // shared link, so there's nothing in this tab's history to go back
+                // to) — home is the correct, deterministic fallback in that case.
                 goHome();
             }
             window.goBack = goBack;
@@ -6063,15 +6311,21 @@
             }
 
             // ─── CHECK IF USER HAS WATCHED CONTENT ──────────────────────
-            async function hasWatched(userId, contentId) {
+            async function hasWatched(userId, contentId, contentType) {
                 if (!userId || !contentId) return false;
                 try {
-                    const { data, error } = await supabaseClient
+                    // .ilike (case-insensitive) rather than .eq: content_type has historically
+                    // been written as both 'Movie' and 'movie' — see the same note on
+                    // fetchComments() below — so an exact-case match would silently miss
+                    // older rows and report "not watched" for something the user already
+                    // marked as watched.
+                    let query = supabaseClient
                         .from('watched')
                         .select('id')
                         .eq('user_id', userId)
-                        .eq('content_id', contentId)
-                        .maybeSingle();
+                        .eq('content_id', contentId);
+                    if (contentType) query = query.ilike('content_type', contentType);
+                    const { data, error } = await query.maybeSingle();
                     if (error) throw error;
                     return !!data;
                 } catch (e) {
@@ -6510,7 +6764,7 @@
                             act.name_english === actorName || act.name_kurdish === actorName
                         );
                         const clickAttr = matchedActor ?
-                            `onclick="showActorDetail('${matchedActor.id}')" style="cursor:pointer;"` :
+                            `onclick="event.stopPropagation();showActorDetail('${matchedActor.id}')" style="cursor:pointer;"` :
                             '';
                         const imgSrc = a.image || 'https://picsum.photos/seed/actor/200/200';
                         return `
@@ -6926,7 +7180,7 @@
                         starBtn.dataset.value = i;
                         starBtn.addEventListener('click', async function() {
                             if (!isLoggedIn()) { openProfileModal(); return; }
-                            const watched = await hasWatched(currentUser.id, id);
+                            const watched = await hasWatched(currentUser.id, id, type);
                             if (!watched) {
                                 showToast('تکایە یەکەم "بینیم" کلیک بکە بۆ ئەم بەرهەمە، پاشان پلە بدە.', 'info');
                                 return;
@@ -6945,12 +7199,17 @@
 
                 async function fetchComments() {
                     if (!supabaseClient) return [];
-                    const cached = cacheGet('comments_' + id);
+                    const cacheKey = 'comments_' + id + '_' + type;
+                    const cached = cacheGet(cacheKey);
                     if (cached) return cached;
-                    const { data, error } = await supabaseClient.from('comments').select('*').eq('content_id', id).order(
-                        'created_at', { ascending: false });
+                    // .ilike('content_type', type) rather than .eq: existing rows were written
+                    // with inconsistent casing ('Movie' vs 'movie') before this content_type
+                    // filter existed, so a case-sensitive match would silently hide older
+                    // comments. .ilike with no wildcard is a case-insensitive exact match.
+                    const { data, error } = await supabaseClient.from('comments').select('*').eq('content_id', id)
+                        .ilike('content_type', type).order('created_at', { ascending: false });
                     if (error) return [];
-                    cacheSet('comments_' + id, data);
+                    cacheSet(cacheKey, data);
                     return data;
                 }
 
@@ -6991,7 +7250,7 @@
                 if (submitBtn && commentInput) {
                     submitBtn.onclick = async function() {
                         if (!isLoggedIn()) { openProfileModal(); return; }
-                        const watched = await hasWatched(currentUser.id, id);
+                        const watched = await hasWatched(currentUser.id, id, type);
                         if (!watched) {
                             showToast('تکایە یەکەم "بینیم" کلیک بکە بۆ ئەم بەرهەمە، پاشان کۆمێنت بنووسە.', 'info');
                             return;
@@ -7010,7 +7269,7 @@
                                     return;
                                 }
                                 commentInput.value = '';
-                                cacheClearKeys('comments_' + id);
+                                cacheClearKeys('comments_' + id + '_' + type);
                                 await renderComments();
                                 await addXP(30);
                                 trackGA('comment', { content_id: id, content_type: type });
@@ -7039,20 +7298,25 @@
             async function fetchUserDetailData(contentId, type) {
                 if (!supabaseClient || !currentUser || !currentUser.id) return;
                 try {
-                    const cacheKey = 'userdetail_' + currentUser.id + '_' + contentId;
+                    const cacheKey = 'userdetail_' + currentUser.id + '_' + contentId + '_' + type;
                     const cached = cacheGet(cacheKey);
                     if (cached) {
                         applyUserDetailData(cached, contentId);
                         return;
                     }
+                    // .ilike (case-insensitive exact match) rather than .eq on content_type
+                    // throughout: some existing rows predate this filter and were written with
+                    // inconsistent casing ('Movie' vs 'movie'), so an exact-case match would
+                    // silently miss them and, e.g., show a "not rated yet" state for content
+                    // the user already rated.
                     const [ratingRes, wlRes, wRes, avgRes] = await Promise.all([
                         supabaseClient.from('ratings').select('rating').eq('user_id', currentUser.id).eq('content_id',
-                            contentId).maybeSingle(),
+                            contentId).ilike('content_type', type).maybeSingle(),
                         supabaseClient.from('watchlists').select('id').eq('user_id', currentUser.id).eq('content_id',
-                            contentId).maybeSingle(),
+                            contentId).ilike('content_type', type).maybeSingle(),
                         supabaseClient.from('watched').select('id').eq('user_id', currentUser.id).eq('content_id', contentId)
-                        .maybeSingle(),
-                        supabaseClient.from('ratings').select('rating').eq('content_id', contentId)
+                        .ilike('content_type', type).maybeSingle(),
+                        supabaseClient.from('ratings').select('rating').eq('content_id', contentId).ilike('content_type', type)
                     ]);
                     const data = { rating: ratingRes.data, watchlist: wlRes.data, watched: wRes.data, avg: avgRes.data };
                     cacheSet(cacheKey, data);
@@ -7137,7 +7401,7 @@
                         trackGA('remove_from_watchlist', { content_id: contentId });
                     }
                     if (currentUser && currentUser.id) {
-                        cacheClearKeys('userdetail_' + currentUser.id + '_' + contentId);
+                        cacheClearKeys('userdetail_' + currentUser.id + '_' + contentId + '_' + contentType);
                     }
                 } catch (e) {
                     console.error('Watchlist error:', e);
@@ -7179,11 +7443,12 @@
                             if (currentViews > 0) viewEl.textContent = (currentViews - 1) + ' بینین';
                         }
                         const allItems = [...allMoviesData, ...allAnimationsData, ...allAnimeData];
-                        const idx = allItems.findIndex(m => m.id === contentId);
+                        const idx = allItems.findIndex(m => m.id === contentId && (m.type || '').toLowerCase() ===
+                            (contentType || '').toLowerCase());
                         if (idx !== -1 && allItems[idx].views > 0) allItems[idx].views--;
                         const cacheKeysToInvalidate = ['movies', 'animations', 'anime', 'content_stats'];
                         if (currentUser && currentUser.id) cacheKeysToInvalidate.push('userdetail_' + currentUser.id +
-                            '_' + contentId);
+                            '_' + contentId + '_' + contentType);
                         cacheClearKeys(...cacheKeysToInvalidate);
                         return;
                     }
@@ -7205,11 +7470,12 @@
                     if (span) span.textContent = 'بینراو';
                     if (btn) btn.classList.add('is-active');
                     const allItems = [...allMoviesData, ...allAnimationsData, ...allAnimeData];
-                    const idx = allItems.findIndex(m => m.id === contentId);
+                    const idx = allItems.findIndex(m => m.id === contentId && (m.type || '').toLowerCase() ===
+                        (contentType || '').toLowerCase());
                     if (idx !== -1) allItems[idx].views = (allItems[idx].views || 0) + 1;
                     const wCacheKeysToInvalidate = ['movies', 'animations', 'anime', 'content_stats'];
                     if (currentUser && currentUser.id) wCacheKeysToInvalidate.push('userdetail_' + currentUser.id + '_' +
-                        contentId);
+                        contentId + '_' + contentType);
                     cacheClearKeys(...wCacheKeysToInvalidate);
                 } catch (e) {
                     console.error('Watched error:', e);
@@ -7245,13 +7511,15 @@
                     });
                     const rCacheKeysToInvalidate = ['movies', 'animations', 'anime', 'content_stats', 'site_vote_averages'];
                     if (currentUser && currentUser.id) rCacheKeysToInvalidate.push('userdetail_' + currentUser.id + '_' +
-                        contentId);
+                        contentId + '_' + contentType);
                     cacheClearKeys(...rCacheKeysToInvalidate);
                     trackGA('rate_item', { content_id: contentId, rating: ratingVal });
                     showToast('سوپاس بۆ پلەدان!', 'success');
 
+                    // .ilike (case-insensitive exact match): see the note on fetchComments()
+                    // for why content_type is compared case-insensitively rather than with .eq.
                     const { data: avgData, error: avgErr } = await supabaseClient.from('ratings').select('rating').eq(
-                        'content_id', contentId);
+                        'content_id', contentId).ilike('content_type', contentType);
                     if (!avgErr && avgData && avgData.length > 0) {
                         const sum = avgData.reduce((a, b) => a + b.rating, 0);
                         const newAvg = sum / avgData.length;
@@ -7259,10 +7527,14 @@
                         if (ratingEl) ratingEl.textContent = newAvg.toFixed(1);
                         const votersEl = document.querySelector('.brand-voters');
                         if (votersEl) votersEl.textContent = `${avgData.length} دەنگ`;
-                        if (siteVoteAverages) siteVoteAverages.set(contentId, { avg: newAvg, count: avgData.length });
+                        // Composite key (top250Key) matches fetchSiteVoteAverages/getSiteVoteRating/
+                        // getSiteVoteCount, so this live patch lands on the same map entry those
+                        // functions read on the very next render.
+                        if (siteVoteAverages) siteVoteAverages.set(top250Key(contentId, contentType), { avg: newAvg, count: avgData.length });
                     }
                     const allItems = [...allMoviesData, ...allAnimationsData, ...allAnimeData];
-                    const idx = allItems.findIndex(m => m.id === contentId);
+                    const idx = allItems.findIndex(m => m.id === contentId && (m.type || '').toLowerCase() ===
+                        (contentType || '').toLowerCase());
                     if (idx !== -1) {
                         if (isNew) allItems[idx].voters = (allItems[idx].voters || 0) + 1;
                     }
@@ -7291,12 +7563,12 @@
             let swiperInstances = [];
             let isInitialized = false;
             let currentRankTab = 'top_movies';
-            let siteVoteAverages = null; // Map<content_id, {avg, count}> computed live from the `ratings` table
+            let siteVoteAverages = null; // Map<"id|type", {avg, count}> computed live from the `ratings` table — see top250Key() for the same keying convention used elsewhere in this file
 
             async function fetchSiteVoteAverages() {
                 const cacheKey = 'site_vote_averages';
                 const cached = cacheGet(cacheKey);
-                // Cache must be a plain array of [contentId, {avg,count}] pairs (see cacheSet
+                // Cache must be a plain array of [key, {avg,count}] pairs (see cacheSet
                 // below) — never a live Map, since JSON.stringify(new Map()) serializes to "{}"
                 // and silently loses every entry on the localStorage round-trip. The Array.isArray
                 // guard also makes this self-healing for anyone who already has a stale "{}" from
@@ -7308,15 +7580,22 @@
                 const map = new Map();
                 try {
                     if (supabaseClient) {
-                        const { data, error } = await supabaseClient.from('ratings').select('content_id, rating');
+                        // content_type is fetched and folded into the aggregation key (via
+                        // top250Key) so that a movie and an anime/animation which happen to
+                        // share a numeric content_id — a real, confirmed occurrence in this
+                        // database, since each content table has its own independent id
+                        // sequence — are aggregated as two separate items rather than one
+                        // merged, wrong average.
+                        const { data, error } = await supabaseClient.from('ratings').select('content_id, content_type, rating');
                         if (!error && Array.isArray(data)) {
                             const sums = new Map();
                             data.forEach(r => {
                                 if (r.content_id == null || typeof r.rating !== 'number') return;
-                                const entry = sums.get(r.content_id) || { sum: 0, count: 0 };
+                                const key = top250Key(r.content_id, r.content_type);
+                                const entry = sums.get(key) || { sum: 0, count: 0 };
                                 entry.sum += r.rating;
                                 entry.count += 1;
-                                sums.set(r.content_id, entry);
+                                sums.set(key, entry);
                             });
                             sums.forEach((v, k) => map.set(k, { avg: v.sum / v.count, count: v.count }));
                         }
@@ -7330,15 +7609,17 @@
             }
 
             function getSiteVoteRating(item) {
-                if (siteVoteAverages && siteVoteAverages.has(item.id)) {
-                    return siteVoteAverages.get(item.id).avg;
+                const key = top250Key(item.id, item.type);
+                if (siteVoteAverages && siteVoteAverages.has(key)) {
+                    return siteVoteAverages.get(key).avg;
                 }
                 return 0; // no site votes yet — ranked lowest, per website-votes-only ranking
             }
 
             function getSiteVoteCount(item) {
-                if (siteVoteAverages && siteVoteAverages.has(item.id)) {
-                    return siteVoteAverages.get(item.id).count;
+                const key = top250Key(item.id, item.type);
+                if (siteVoteAverages && siteVoteAverages.has(key)) {
+                    return siteVoteAverages.get(key).count;
                 }
                 return 0;
             }
@@ -8376,7 +8657,12 @@
                     const wlCounts = {};
                     if (!wlErr && wlData) {
                         wlData.forEach(r => {
-                            const key = r.content_id + '|' + (r.content_type || '');
+                            // Lowercased: DB content_type is stored lowercase ('movie'), while
+                            // the consumer (getSmartRecommendations) builds its lookup key from
+                            // the in-memory item.type, which is capitalized ('Movie'). Without
+                            // normalizing case on both sides these keys never matched, so every
+                            // item's watchlist-popularity signal was silently always zero.
+                            const key = r.content_id + '|' + (r.content_type || '').toLowerCase();
                             wlCounts[key] = (wlCounts[key] || 0) + 1;
                         });
                     }
@@ -8387,7 +8673,8 @@
                     const cmCounts = {};
                     if (!cmErr && cmData) {
                         cmData.forEach(r => {
-                            const key = r.content_id + '|' + (r.content_type || '');
+                            // Same case-normalization as wlCounts above.
+                            const key = r.content_id + '|' + (r.content_type || '').toLowerCase();
                             cmCounts[key] = (cmCounts[key] || 0) + 1;
                         });
                     }
@@ -9525,7 +9812,10 @@
                     else if (ct === 'animation') source = allAnimationsData;
                     else source = allMoviesData;
                     const item = source.find(c => c.id === i.content_id);
-                    if (item) map[i.content_id] = item;
+                    // Keyed by id+type (top250Key), not id alone: a plain numeric key would let
+                    // a movie and an anime/animation in the same collection that happen to share
+                    // a numeric content_id silently overwrite one another in this map.
+                    if (item) map[top250Key(i.content_id, i.content_type)] = item;
                 });
                 return map;
             }
@@ -9711,7 +10001,8 @@
                 if (!main) return;
                 const items = await fetchCollectionItems(coll.id);
                 const contentMap = getContentByCollectionItems(items);
-                const orderedItems = items.map(i => ({ ...i, content: contentMap[i.content_id] })).filter(i => i.content);
+                const orderedItems = items.map(i => ({ ...i, content: contentMap[top250Key(i.content_id, i.content_type)] }))
+                    .filter(i => i.content);
                 const cover = coll.cover_url || 'https://picsum.photos/seed/collection' + coll.id + '/1200/400';
                 const count = orderedItems.length;
                 const safeName = sanitizeText(coll.name);
@@ -10620,9 +10911,24 @@
                     animationCount = 0,
                     animeCount = 0;
                 const allContent = [...allMoviesData, ...allAnimationsData, ...allAnimeData];
+                // Resolves a known_for entry to its actual content item. Matches on
+                // content_type first when the entry provides one (every known_for row
+                // written by the ingest pipeline includes it) — matching by id alone
+                // is unsafe because movies/animations/anime are separate tables, each
+                // with its own independent id sequence, so unrelated titles can and do
+                // share a numeric id (e.g. a "known for" animation credit resolving to
+                // an unrelated movie that happens to have the same id).
+                const findKnownForContent = (k) => {
+                    const kType = (k.content_type || '').toLowerCase();
+                    if (kType) {
+                        return allContent.find(c => String(c.id) === String(k.content_id) && (c.type || '')
+                            .toLowerCase() === kType);
+                    }
+                    return allContent.find(c => String(c.id) === String(k.content_id));
+                };
                 if (knownFor.length > 0) {
                     knownFor.forEach(k => {
-                        const content = allContent.find(c => String(c.id) === String(k.content_id));
+                        const content = findKnownForContent(k);
                         if (content) {
                             const t = (content.type || '').toLowerCase();
                             if (t === 'movie') movieCount++;
@@ -10648,7 +10954,7 @@
                 let productions = [];
                 if (knownFor.length > 0) {
                     productions = knownFor.map(k => {
-                        const content = allContent.find(c => String(c.id) === String(k.content_id));
+                        const content = findKnownForContent(k);
                         return content ? { ...content, role: k.role || '' } : null;
                     }).filter(Boolean);
                 } else {
@@ -10735,27 +11041,43 @@
                         `;
                 }
 
-                // ─── Awards won / nominated (starred, gold) ───
+                // ─── Awards won / nominated — same award-row component as the movie/anime
+                // detail page, now including each award's category alongside its year ───
                 let awardsHTML = '';
                 if (awardsWon.length > 0 || awardsNominated.length > 0) {
+                    const renderAwardRow = (a, isNominated) => {
+                        const name = sanitizeText(typeof a === 'string' ? a : (a.name || a.title || ''));
+                        const category = (a && typeof a === 'object' && a.category) ? sanitizeText(a.category) : '';
+                        const year = (a && typeof a === 'object' && a.year) ? sanitizeText(String(a.year)) : '';
+                        const metaParts = [category, year].filter(Boolean).join(' · ');
+                        return `
+                            <div class="award-row${isNominated ? ' is-nominated' : ''}">
+                                <span class="award-trophy">${isNominated ? '🎗️' : '🏆'}</span>
+                                <div class="award-body">
+                                    <span class="award-name safe-text">${name}</span>
+                                    ${metaParts ? `<span class="award-meta safe-text">${metaParts}</span>` : ''}
+                                </div>
+                            </div>
+                        `;
+                    };
                     awardsHTML = `
                             <div class="detail-section">
                                 <h2 class="detail-section-title">خەڵاتەکان</h2>
-                                <div class="glass-panel p-6 md:p-8 space-y-4">
+                                <div class="glass-panel p-6 md:p-8 space-y-5">
                                     ${awardsWon.length > 0 ? `
                                         <div>
-                                            <p class="text-white/50 text-xs mb-2">بەدەستهێنراو</p>
-                                            <ul class="space-y-1">
-                                                ${awardsWon.map(a => `<li class="text-sm safe-text" style="color:#FBBF24;">★ ${sanitizeText(typeof a === 'string' ? a : (a.name || a.title || ''))}${a && a.year ? ` <span style="color:rgba(255,255,255,0.4);">(${sanitizeText(String(a.year))})</span>` : ''}</li>`).join('')}
-                                            </ul>
+                                            <p class="award-group-label">🏆 بەدەستهێنراو (${awardsWon.length})</p>
+                                            <div class="awards-list">
+                                                ${awardsWon.map(a => renderAwardRow(a, false)).join('')}
+                                            </div>
                                         </div>
                                     ` : ''}
                                     ${awardsNominated.length > 0 ? `
                                         <div>
-                                            <p class="text-white/50 text-xs mb-2">کاندیدکراو</p>
-                                            <ul class="space-y-1">
-                                                ${awardsNominated.map(a => `<li class="text-sm text-white/70 safe-text">☆ ${sanitizeText(typeof a === 'string' ? a : (a.name || a.title || ''))}${a && a.year ? ` <span style="color:rgba(255,255,255,0.4);">(${sanitizeText(String(a.year))})</span>` : ''}</li>`).join('')}
-                                            </ul>
+                                            <p class="award-group-label">🎗️ کاندیدکراو (${awardsNominated.length})</p>
+                                            <div class="awards-list">
+                                                ${awardsNominated.map(a => renderAwardRow(a, true)).join('')}
+                                            </div>
                                         </div>
                                     ` : ''}
                                 </div>
@@ -10810,7 +11132,7 @@
                                         ${nameKu && nameKu !== nameEn ? `<p class="actor-detail-sub safe-text">${nameKu}</p>` : ''}
                                         <div class="flex flex-wrap items-center gap-3">
                                             ${genderDisplay ? `<span class="text-white/60 text-sm">ڕەگەز: ${genderDisplay}</span>` : ''}
-                                            <span class="text-sm ${isDeceased ? 'text-white/50' : ''}" style="${isDeceased ? '' : 'color:#4ADE80;'}">${isDeceased ? '🕊️' : '🟢'} ${lifeStatusDisplay}</span>
+                                            <span class="life-status-pill ${isDeceased ? 'is-deceased' : 'is-alive'}"><span class="dot"></span>${isDeceased ? '🕊️' : ''} ${sanitizeText(lifeStatusDisplay)}</span>
                                         </div>
                                         <div class="actor-stats-grid">
                                             <div class="actor-stat-card"><div class="num">${creditCount}</div><div class="label">کۆی بەرهەم</div></div>
@@ -10819,28 +11141,58 @@
                                             ${country === 'Japan' || country === 'یابان' ? `<div class="actor-stat-card"><div class="num">${animeCount}</div><div class="label">ئەنیمی</div></div>` : ''}
                                         </div>
 
-                                        <!-- ─── Biography breakdown: each fact in its own box ─── -->
-                                        <div class="detail-grid-2col text-sm" style="margin-top:0.5rem;">
-                                            <div class="info-row"><span class="text-white/50">ساڵی لەدایکبوون:</span> <span class="safe-text">${birthDisplay}</span></div>
-                                            <div class="info-row"><span class="text-white/50">وڵاتی لەدایکبوون:</span> <span class="safe-text">${country || 'N/A'}</span></div>
-                                            <div class="info-row"><span class="text-white/50">شاری لەدایکبوون:</span> <span class="safe-text">${birthCity || 'N/A'}</span></div>
-                                            <div class="info-row"><span class="text-white/50">تەمەن:</span> <span class="safe-text">${ageDisplay}</span></div>
-                                            ${education ? `<div class="info-row"><span class="text-white/50">ئاستی خوێندن:</span> <span class="safe-text">${education}</span></div>` : ''}
-                                            ${firstAppearance ? `<div class="info-row"><span class="text-white/50">یەکەم دەرکەوتن:</span> <span class="safe-text">${firstAppearance}</span></div>` : ''}
+                                        <!-- ─── Biography breakdown: icon-fronted fact chips (short values only) ─── -->
+                                        <div class="bio-facts-grid" style="margin-top:0.5rem;">
+                                            <div class="bio-fact-chip"><span class="icon">📅</span><div class="content"><div class="fact-label">ساڵی لەدایکبوون</div><div class="fact-value safe-text">${sanitizeText(birthDisplay)}</div></div></div>
+                                            <div class="bio-fact-chip"><span class="icon">🌍</span><div class="content"><div class="fact-label">وڵاتی لەدایکبوون</div><div class="fact-value safe-text" title="${sanitizeText(country || 'N/A')}">${sanitizeText(country || 'N/A')}</div></div></div>
+                                            <div class="bio-fact-chip"><span class="icon">🏙️</span><div class="content"><div class="fact-label">شاری لەدایکبوون</div><div class="fact-value safe-text" title="${sanitizeText(birthCity || 'N/A')}">${sanitizeText(birthCity || 'N/A')}</div></div></div>
+                                            <div class="bio-fact-chip"><span class="icon">🎂</span><div class="content"><div class="fact-label">تەمەن</div><div class="fact-value safe-text">${sanitizeText(ageDisplay)}</div></div></div>
                                         </div>
 
+                                        <!-- education / first_appearance are full paragraphs in the real data
+                                             (confirmed 94–323 chars), not short facts, so they get their own
+                                             readable prose blocks rather than being squeezed into a fact chip. -->
+                                        ${education ? `
+                                            <div class="bio-subsection">
+                                                <p class="bio-subsection-title">🎓 ئاستی خوێندن</p>
+                                                <div class="bio-prose-block">
+                                                    <span class="text safe-text">${sanitizeText(education)}</span>
+                                                </div>
+                                            </div>
+                                        ` : ''}
+
+                                        ${firstAppearance ? `
+                                            <div class="bio-subsection">
+                                                <p class="bio-subsection-title">✨ یەکەم دەرکەوتن</p>
+                                                <div class="bio-prose-block">
+                                                    <span class="text safe-text">${sanitizeText(firstAppearance)}</span>
+                                                </div>
+                                            </div>
+                                        ` : ''}
+
                                         ${breakthroughRole ? `
-                                            <div class="mt-2 pt-3 border-t border-white/10">
-                                                <p class="text-white/50 text-xs mb-1">ڕۆڵی سەرەکی سەرەتایی (سەرنجڕاکێش)</p>
-                                                <p class="text-sm safe-text" style="color:#FBBF24;">🎬 ${breakthroughRole}</p>
+                                            <div class="bio-subsection">
+                                                <p class="bio-subsection-title">🎬 ڕۆڵی سەرەکی سەرەتایی (سەرنجڕاکێش)</p>
+                                                <div class="breakthrough-highlight">
+                                                    <span class="icon">🌟</span>
+                                                    <span class="text safe-text">${sanitizeText(breakthroughRole)}</span>
+                                                </div>
                                             </div>
                                         ` : ''}
 
                                         ${interests.length > 0 ? `
-                                            <div class="mt-2 pt-3 border-t border-white/10">
-                                                <p class="text-white/50 text-xs mb-2">خولیا و ئارەزووەکان</p>
-                                                <div class="flex flex-wrap gap-2">
-                                                    ${interests.map(i => `<span class="badge safe-text">${sanitizeText(i)}</span>`).join('')}
+                                            <div class="bio-subsection">
+                                                <p class="bio-subsection-title">🎨 خولیا و ئارەزووەکان</p>
+                                                <div class="interests-grid">
+                                                    ${interests.map(i => {
+                                                        const { topic, desc } = splitInterestEntry(i);
+                                                        return `
+                                                            <div class="interest-card">
+                                                                <div class="topic safe-text">${sanitizeText(topic)}</div>
+                                                                ${desc ? `<div class="desc safe-text">${sanitizeText(desc)}</div>` : ''}
+                                                            </div>
+                                                        `;
+                                                    }).join('')}
                                                 </div>
                                             </div>
                                         ` : ''}
@@ -10897,7 +11249,10 @@
                 const allContent = [...allMoviesData, ...allAnimationsData, ...allAnimeData];
                 if (famousProds.length > 0) {
                     productions = famousProds.map(k => {
-                        const content = allContent.find(c => String(c.id) === String(k.content_id));
+                        const kType = (k.content_type || '').toLowerCase();
+                        const content = kType ?
+                            allContent.find(c => String(c.id) === String(k.content_id) && (c.type || '').toLowerCase() === kType) :
+                            allContent.find(c => String(c.id) === String(k.content_id));
                         return content ? { ...content } : null;
                     }).filter(Boolean);
                 } else {
@@ -11196,22 +11551,31 @@
                 if (supabaseClient && user && user.id) {
                     try {
                         const [wlRes, wRes, ratingsRes, commentsRes, favRes] = await Promise.all([
-                            supabaseClient.from('watchlists').select('content_id').eq('user_id', user.id),
-                            supabaseClient.from('watched').select('content_id').eq('user_id', user.id),
+                            supabaseClient.from('watchlists').select('content_id, content_type').eq('user_id', user.id),
+                            supabaseClient.from('watched').select('content_id, content_type').eq('user_id', user.id),
                             supabaseClient.from('ratings').select('content_id').eq('user_id', user.id),
                             supabaseClient.from('comments').select('id').eq('user_id', user.id),
                             supabaseClient.from('favorites').select('content_id, content_type, position').eq(
                                 'user_id', user.id).order('position', { ascending: true })
                         ]);
+                        // findByIdAndType: matches an allItems entry by both numeric id and
+                        // content type (case-insensitively — DB content_type is lowercase while
+                        // in-memory item.type is capitalized). Matching by id alone would let a
+                        // saved movie resolve to an unrelated anime/animation that happens to
+                        // share the same numeric id, since each content table has its own
+                        // independent id sequence (confirmed collisions exist in this database,
+                        // e.g. movie id 56 and animation id 56 are different titles).
+                        const findByIdAndType = (items, id, rowType) => items.find(m => m.id === id && (!rowType || (m.type ||
+                            '').toLowerCase() === (rowType || '').toLowerCase()));
                         if (!wlRes.error) {
-                            const ids = wlRes.data.map(r => r.content_id);
                             const allItems = [...allMoviesData, ...allAnimationsData, ...allAnimeData];
-                            watchlistItems = ids.map(id => allItems.find(m => m.id === id)).filter(Boolean);
+                            watchlistItems = wlRes.data.map(r => findByIdAndType(allItems, r.content_id, r.content_type))
+                                .filter(Boolean);
                         }
                         if (!wRes.error) {
-                            const ids = wRes.data.map(r => r.content_id);
                             const allItems = [...allMoviesData, ...allAnimationsData, ...allAnimeData];
-                            watchedItems = ids.map(id => allItems.find(m => m.id === id)).filter(Boolean);
+                            watchedItems = wRes.data.map(r => findByIdAndType(allItems, r.content_id, r.content_type))
+                                .filter(Boolean);
                         }
                         if (!ratingsRes.error) totalRatings = ratingsRes.data.length;
                         if (!commentsRes.error) totalComments = commentsRes.data.length;
@@ -11219,7 +11583,7 @@
                             const allItems = [...allMoviesData, ...allAnimationsData, ...allAnimeData];
                             favRes.data.forEach(row => {
                                 if (row.position >= 0 && row.position < 5) {
-                                    const item = allItems.find(m => m.id === row.content_id);
+                                    const item = findByIdAndType(allItems, row.content_id, row.content_type);
                                     if (item) favoriteSlots[row.position] = item;
                                 }
                             });
