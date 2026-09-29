@@ -7,16 +7,17 @@ on:
 
 jobs:
   health-monitor:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: کۆکردنەوەی کۆد
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: دامەزراندنی Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: '22'
+          node-version: '24'
+          cache: 'npm'
 
       - name: دامەزراندنی پەیوەندییەکان
         run: npm install axios @supabase/supabase-js
@@ -28,8 +29,4 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-
           WEBSITE_URL: "https://kurd-m-db.vercel.app"
-
-          MONITOR_WINDOW_MINUTES: "75"
-          MONITOR_TIMEOUT_MS: "8000"
