@@ -2,12 +2,13 @@ name: KurdMDb - چاودێری سەلامەتی
 
 on:
   schedule:
-    - cron: '0 */3 * * *'
+    - cron: '0 * * * *'
   workflow_dispatch:
 
 jobs:
   health-monitor:
     runs-on: ubuntu-latest
+
     steps:
       - name: کۆکردنەوەی کۆد
         uses: actions/checkout@v4
@@ -20,11 +21,15 @@ jobs:
       - name: دامەزراندنی پەیوەندییەکان
         run: npm install axios @supabase/supabase-js
 
-      - name: جێبەجێکردنی ڕاپۆرتی خولەکی
+      - name: جێبەجێکردنی چاودێری
         run: node scripts/health_report.js
         env:
           SECURITY_TELEGRAM_BOT_TOKEN: ${{ secrets.SECURITY_TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+
           WEBSITE_URL: "https://kurd-m-db.vercel.app"
+
+          MONITOR_WINDOW_MINUTES: "75"
+          MONITOR_TIMEOUT_MS: "8000"
