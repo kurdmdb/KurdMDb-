@@ -14,12 +14,21 @@ const SUSPICIOUS_IP_THRESHOLD = 30;
 
 class SecurityGuard {
   constructor() {
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+      throw new Error(
+        'SUPABASE_URL or SUPABASE_SERVICE_KEY is missing.'
+      );
+    }
+
     this.supabase = createClient(
       SUPABASE_URL,
       SUPABASE_SERVICE_KEY
     );
   }
 
+  // ==========================================
+  // خوێندنەوە و شیکردنەوەی Log ـەکان
+  // ==========================================
   async analyzeLogs(timeWindowMinutes = WINDOW_MINUTES) {
     const since = new Date(
       Date.now() - timeWindowMinutes * 60 * 1000
@@ -42,11 +51,16 @@ class SecurityGuard {
         .order('created_at', { ascending: false });
 
       if (error) {
-        throw new Error(`Supabase log query failed: ${error.message}`);
+        throw new Error(
+          `Supabase log query failed: ${error.message}`
+        );
       }
 
       const logs = data || [];
 
+      // ------------------------------------------
+      // کۆکردنەوەی IP ـەکان
+      // ------------------------------------------
       const ipCounts = new Map();
 
       for (const log of logs) {
@@ -60,19 +74,43 @@ class SecurityGuard {
         );
       }
 
+      // ------------------------------------------
+      // IP ـە زۆر چالاکەکان
+      // ------------------------------------------
       const suspiciousIps = [...ipCounts.entries()]
-        .filter(([, count]) => count >= SUSPICIOUS_IP_THRESHOLD)
+        .filter(
+          ([, count]) =>
+            count >= SUSPICIOUS_IP_THRESHOLD
+        )
         .sort((a, b) => b[1] - a[1])
         .map(([ip, count]) => ({
           ip,
           count,
         }));
 
+      // ------------------------------------------
+      // ژماردنی Action ـەکان
+      // ------------------------------------------
       const actionCounts = {};
 
       for (const log of logs) {
-        const action = log.action || 'unknown';
-        actionCounts[action] = (actionCounts[action] || 0) + 1;
+        const action = log.action || 'نادیار';
+
+        actionCounts[action] =
+          (actionCounts[action] || 0) + 1;
+      }
+
+      // ------------------------------------------
+      // ژماردنی Table ـەکان
+      // ------------------------------------------
+      const tableCounts = {};
+
+      for (const log of logs) {
+        const table =
+          log.table_name || 'نادیار';
+
+        tableCounts[table] =
+          (tableCounts[table] || 0) + 1;
       }
 
       return {
@@ -80,17 +118,22 @@ class SecurityGuard {
         totalLogs: logs.length,
         suspiciousIps,
         actionCounts,
+        tableCounts,
         logs,
         windowMinutes: timeWindowMinutes,
       };
     } catch (error) {
-      console.error('Log analysis error:', error.message);
+      console.error(
+        'Log analysis error:',
+        error.message
+      );
 
       return {
         success: false,
         totalLogs: 0,
         suspiciousIps: [],
         actionCounts: {},
+        tableCounts: {},
         logs: [],
         windowMinutes: timeWindowMinutes,
         error: error.message,
@@ -98,29 +141,45 @@ class SecurityGuard {
     }
   }
 
+  // ==========================================
+  // پشکنینی Website
+  // ==========================================
   async checkWebsiteHealth() {
     try {
-      const response = await axios.get(WEBSITE_URL, {
-        timeout: 10000,
-        validateStatus: () => true,
-      });
+      const start = Date.now();
 
+      const response = await axios.get(
+        WEBSITE_URL,
+        {
+          timeout: 10000,
+          validateStatus: () => true,
+        }
+      );
+
+      const responseTime = Date.now() - start;
       const status = response.status;
 
       return {
-        healthy: status >= 200 && status < 400,
+        healthy:
+          status >= 200 &&
+          status < 400,
+
         status,
-        responseTime: response.headers['x-response-time'] || null,
+        responseTime,
       };
     } catch (error) {
       return {
         healthy: false,
         status: null,
+        responseTime: null,
         error: error.message,
       };
     }
   }
 
+  // ==========================================
+  // پشکنینی Supabase
+  // ==========================================
   async checkSupabaseHealth() {
     try {
       const { error } = await this.supabase
@@ -146,129 +205,284 @@ class SecurityGuard {
     }
   }
 
-  buildReport(website, supabase, logs) {
+  // ==========================================
+  // دروستکردنی ڕاپۆرتی Telegram
+  // ==========================================
+  buildReport(
+    website,
+    supabase,
+    logs
+  ) {
     const now = new Date();
+
+    const baghdadTime =
+      new Intl.DateTimeFormat(
+        'ku-IQ',
+        {
+          timeZone: 'Asia/Baghdad',
+          dateStyle: 'medium',
+          timeStyle: 'medium',
+        }
+      ).format(now);
 
     const lines = [];
 
-    lines.push('<b>🛡 KurdMDb Security Monitoring</b>');
-    lines.push('');
+    // ------------------------------------------
+    // سەرەتا
+    // ------------------------------------------
     lines.push(
-      `🕒 ${now.toISOString()}`
+      '<b>🛡 ڕاپۆرتی چاودێری KurdMDb</b>'
     );
-    lines.push(
-      `⏱ Monitoring window: ${logs.windowMinutes} minutes`
-    );
+
     lines.push('');
 
+    lines.push(
+      `🕒 کات: ${this.escapeHtml(baghdadTime)}`
+    );
+
+    lines.push(
+      `⏱ ماوەی چاودێری: ${logs.windowMinutes} خولەک`
+    );
+
+    lines.push('');
+
+    // ------------------------------------------
     // Website
+    // ------------------------------------------
+    lines.push('<b>🌐 دۆخی ماڵپەڕ</b>');
+
     if (website.healthy) {
       lines.push(
-        `🌐 Website: <b>OK</b> (${website.status})`
+        `🟢 ماڵپەڕ بەردەستە`
       );
+
+      lines.push(
+        `• HTTP: ${website.status}`
+      );
+
+      if (website.responseTime !== null) {
+        lines.push(
+          `• وەڵامدانەوە: ${website.responseTime} ms`
+        );
+      }
     } else {
       lines.push(
-        `🌐 Website: <b>PROBLEM</b>`
+        '🔴 کێشە لە ماڵپەڕ دۆزرایەوە'
       );
 
       if (website.status) {
         lines.push(
-          `HTTP status: ${website.status}`
+          `• HTTP: ${website.status}`
+        );
+      }
+
+      if (website.responseTime !== null) {
+        lines.push(
+          `• وەڵامدانەوە: ${website.responseTime} ms`
         );
       }
 
       if (website.error) {
         lines.push(
-          `Error: ${this.escapeHtml(website.error)}`
+          `• هەڵە: ${this.escapeHtml(
+            website.error
+          )}`
         );
       }
     }
 
+    lines.push('');
+
+    // ------------------------------------------
     // Supabase
+    // ------------------------------------------
+    lines.push(
+      '<b>🗄 دۆخی Supabase</b>'
+    );
+
     if (supabase.healthy) {
       lines.push(
-        '🗄 Supabase logs: <b>OK</b>'
+        '🟢 Supabase بەردەستە'
+      );
+
+      lines.push(
+        '• خوێندنەوەی Log ـەکان سەرکەوتوو بوو'
       );
     } else {
       lines.push(
-        '🗄 Supabase logs: <b>PROBLEM</b>'
+        '🔴 کێشە لە Supabase دۆزرایەوە'
       );
 
       if (supabase.error) {
         lines.push(
-          `Error: ${this.escapeHtml(supabase.error)}`
+          `• هەڵە: ${this.escapeHtml(
+            supabase.error
+          )}`
         );
       }
     }
 
     lines.push('');
 
-    // Logs
+    // ------------------------------------------
+    // Log ـەکان
+    // ------------------------------------------
+    lines.push(
+      '<b>📊 دۆخی Log ـەکان</b>'
+    );
+
     if (logs.success) {
       lines.push(
-        `📊 Log events: <b>${logs.totalLogs}</b>`
+        `• کۆی ڕووداوەکان: ${logs.totalLogs}`
       );
 
       if (logs.totalLogs === 0) {
         lines.push(
-          'ℹ️ No log events were recorded in this window.'
+          'ℹ️ لەم ماوەیەدا هیچ Log ـێک تۆمار نەکراوە.'
         );
       }
     } else {
       lines.push(
-        '📊 Log events: <b>UNAVAILABLE</b>'
+        '🔴 نەکرا Log ـەکان بخوێندرێنەوە.'
       );
 
-      lines.push(
-        `Error: ${this.escapeHtml(logs.error || 'Unknown error')}`
-      );
+      if (logs.error) {
+        lines.push(
+          `• هۆکار: ${this.escapeHtml(
+            logs.error
+          )}`
+        );
+      }
     }
 
     lines.push('');
 
-    // Actions
-    const actions = Object.entries(logs.actionCounts);
+    // ------------------------------------------
+    // Action ـەکان
+    // ------------------------------------------
+    const actions =
+      Object.entries(logs.actionCounts);
 
     if (actions.length > 0) {
-      lines.push('<b>Actions</b>');
+      lines.push(
+        '<b>📌 کردارە تۆمارکراوەکان</b>'
+      );
 
-      for (const [action, count] of actions.slice(0, 10)) {
+      for (
+        const [action, count]
+        of actions.slice(0, 10)
+      ) {
         lines.push(
-          `• ${this.escapeHtml(action)}: ${count}`
+          `• ${this.escapeHtml(
+            action
+          )}: ${count} جار`
         );
       }
 
       lines.push('');
     }
 
-    // Suspicious IPs
-    if (logs.suspiciousIps.length > 0) {
-      lines.push('<b>⚠️ High activity IPs</b>');
+    // ------------------------------------------
+    // Table ـەکان
+    // ------------------------------------------
+    const tables =
+      Object.entries(logs.tableCounts);
 
-      for (const item of logs.suspiciousIps.slice(0, 10)) {
+    if (tables.length > 0) {
+      lines.push(
+        '<b>🗂 خشتەکانی بەکارهاتوو</b>'
+      );
+
+      for (
+        const [table, count]
+        of tables.slice(0, 10)
+      ) {
         lines.push(
-          `• <code>${this.escapeHtml(item.ip)}</code> — ${item.count} events`
+          `• ${this.escapeHtml(
+            table
+          )}: ${count} جار`
         );
       }
 
       lines.push('');
+    }
+
+    // ------------------------------------------
+    // IP ـەکان
+    // ------------------------------------------
+    lines.push(
+      '<b>🔎 چاودێری IP</b>'
+    );
+
+    if (
+      logs.suspiciousIps.length > 0
+    ) {
       lines.push(
-        'ℹ️ Monitoring only — no automatic IP blocking was performed.'
+        `⚠️ ${logs.suspiciousIps.length} IP ـی زۆر چالاک دۆزرایەوە:`
+      );
+
+      for (
+        const item
+        of logs.suspiciousIps.slice(0, 10)
+      ) {
+        lines.push(
+          `• <code>${this.escapeHtml(
+            item.ip
+          )}</code> — ${item.count} ڕووداو`
+        );
+      }
+
+      lines.push('');
+
+      lines.push(
+        'ℹ️ تەنها چاودێری کراوە؛ هیچ IP ـێک خۆکارانە block نەکراوە.'
       );
     } else {
       lines.push(
-        '✅ No IP exceeded the monitoring threshold.'
+        '🟢 هیچ IP ـێک سنووری چاودێری تێنەپەڕاندووە.'
       );
     }
 
     lines.push('');
+
+    // ------------------------------------------
+    // دۆخی گشتی
+    // ------------------------------------------
+    const overallHealthy =
+      website.healthy &&
+      supabase.healthy &&
+      logs.success;
+
+    if (overallHealthy) {
+      lines.push(
+        '<b>🟢 دۆخی گشتی</b>'
+      );
+
+      lines.push(
+        'هەموو پشکنینە سەرەکییەکان بە سەرکەوتوویی تێپەڕین.'
+      );
+    } else {
+      lines.push(
+        '<b>🟠 دۆخی گشتی</b>'
+      );
+
+      lines.push(
+        'یەکێک لە پشکنینەکان کێشەی هەیە و پێویستی بە پشکنینە.'
+      );
+    }
+
+    lines.push('');
+
     lines.push(
-      '<i>This report is for monitoring and observation only.</i>'
+      '📋 ئەم سیستەمە تەنها بۆ چاودێرییە و هیچ گۆڕانکارییەکی خۆکار لە سیستەمدا ناکات.'
     );
 
     return lines.join('\n');
   }
 
+  // ==========================================
+  // پاراستنی HTML ـی Telegram
+  // ==========================================
   escapeHtml(value) {
     return String(value)
       .replace(/&/g, '&amp;')
@@ -277,8 +491,14 @@ class SecurityGuard {
       .replace(/"/g, '&quot;');
   }
 
+  // ==========================================
+  // ناردنی پەیام بۆ Telegram
+  // ==========================================
   async sendMessage(message) {
-    if (!SECURITY_TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+    if (
+      !SECURITY_TELEGRAM_BOT_TOKEN ||
+      !TELEGRAM_CHAT_ID
+    ) {
       throw new Error(
         'Telegram environment variables are missing.'
       );
@@ -288,50 +508,78 @@ class SecurityGuard {
       `https://api.telegram.org/bot${SECURITY_TELEGRAM_BOT_TOKEN}/sendMessage`;
 
     try {
-      await axios.post(url, {
-        chat_id: TELEGRAM_CHAT_ID,
-        text: message,
-        parse_mode: 'HTML',
-        disable_web_page_preview: true,
-      });
+      await axios.post(
+        url,
+        {
+          chat_id: TELEGRAM_CHAT_ID,
+          text: message,
+          parse_mode: 'HTML',
+          disable_web_page_preview: true,
+        },
+        {
+          timeout: 10000,
+        }
+      );
     } catch (error) {
       console.error(
         'Telegram send error:',
-        error.response?.data || error.message
+        error.response?.data ||
+          error.message
       );
 
       throw error;
     }
   }
 
+  // ==========================================
+  // ڕاپۆرتی خۆکار
+  // ==========================================
   async runScheduledReport() {
-    const [website, supabase, logs] = await Promise.all([
-      this.checkWebsiteHealth(),
-      this.checkSupabaseHealth(),
-      this.analyzeLogs(WINDOW_MINUTES),
-    ]);
-
-    const report = this.buildReport(
+    const [
       website,
       supabase,
-      logs
-    );
+      logs,
+    ] = await Promise.all([
+      this.checkWebsiteHealth(),
+      this.checkSupabaseHealth(),
+      this.analyzeLogs(
+        WINDOW_MINUTES
+      ),
+    ]);
+
+    const report =
+      this.buildReport(
+        website,
+        supabase,
+        logs
+      );
 
     await this.sendMessage(report);
   }
 
+  // ==========================================
+  // ئاگادارکردنەوەی خێرا
+  // تەنها چاودێری — هیچ Block ـێک ناکرێت
+  // ==========================================
   async runInstantAlert() {
-    const [website, supabase, logs] = await Promise.all([
-      this.checkWebsiteHealth(),
-      this.checkSupabaseHealth(),
-      this.analyzeLogs(WINDOW_MINUTES),
-    ]);
-
-    const report = this.buildReport(
+    const [
       website,
       supabase,
-      logs
-    );
+      logs,
+    ] = await Promise.all([
+      this.checkWebsiteHealth(),
+      this.checkSupabaseHealth(),
+      this.analyzeLogs(
+        WINDOW_MINUTES
+      ),
+    ]);
+
+    const report =
+      this.buildReport(
+        website,
+        supabase,
+        logs
+      );
 
     await this.sendMessage(report);
   }
