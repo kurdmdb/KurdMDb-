@@ -1,4 +1,3 @@
-// scripts/guard-core.js
 import axios from 'axios';
 import { createClient } from '@supabase/supabase-js';
 
@@ -6,378 +5,1063 @@ class SecurityGuard {
   constructor() {
     this.BOT_TOKEN = process.env.SECURITY_TELEGRAM_BOT_TOKEN;
     this.CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+
     this.SUPABASE_URL = process.env.SUPABASE_URL;
     this.SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
-    this.WEBSITE_URL = process.env.WEBSITE_URL || "https://kurd-m-db.vercel.app";
 
-    if (!this.BOT_TOKEN || !this.CHAT_ID || !this.SUPABASE_URL || !this.SUPABASE_KEY) {
-      throw new Error('Missing required environment variables!');
+    this.WEBSITE_URL =
+      process.env.WEBSITE_URL || 'https://kurd-m-db.vercel.app';
+
+    this.WINDOW_MINUTES = Number(
+      process.env.MONITOR_WINDOW_MINUTES || 75
+    );
+
+    this.TIMEOUT_MS = Number(
+      process.env.MONITOR_TIMEOUT_MS || 8000
+    );
+
+    if (
+      !this.BOT_TOKEN ||
+      !this.CHAT_ID ||
+      !this.SUPABASE_URL ||
+      !this.SUPABASE_KEY
+    ) {
+      throw new Error(
+        'Missing required monitoring environment variables.'
+      );
     }
 
-    this.supabase = createClient(this.SUPABASE_URL, this.SUPABASE_KEY);
-    this.telegramApi = `https://api.telegram.org/bot${this.BOT_TOKEN}`;
+    this.supabase = createClient(
+      this.SUPABASE_URL,
+      this.SUPABASE_KEY
+    );
+
+    this.telegramApi =
+      `https://api.telegram.org/bot${this.BOT_TOKEN}`;
   }
 
-  // ------------------- پاککردنەوەی دەق بۆ Telegram legacy Markdown -------------------
-  // Telegram-ی "Markdown" (V1) تەنها ئەم کاراکتەرانە تایبەتن: _ * ` [
-  // ئەگەر بێ‌کۆنترۆڵ لەناو دەقی دینامیکیدا (path, ip, reason, error message) دابنرێن،
-  // sendMessage بە 400 Bad Request "can't parse entities" شکێنراوە.
-  escapeMd(text) {
-    if (text === null || text === undefined) return '';
-    return String(text).replace(/([_*`[\]])/g, '\\$1');
+  escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   }
 
-  // ------------------- شیکردنەوەی لۆگەکان -------------------
-  async analyzeLogs(timeWindowMinutes = 1) {
-    const since = new Date(Date.now() - timeWindowMinutes * 60 * 1000).toISOString();
+  formatNumber(value) {
+    return new Intl.NumberFormat('en-US')
+      .format(Number(value || 0));
+  }
+
+  formatTime(value) {
+    return new Date(value).toLocaleString('ckb-IR', {
+      timeZone: 'Asia/Baghdad',
+      hour12: false,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  // =========================================================
+  // LOG MONITORING
+  // =========================================================
+
+  async analyzeLogs(
+    timeWindowMinutes = this.WINDOW_MINUTES
+  ) {
+    const since = new Date(
+      Date.now() -
+      timeWindowMinutes * 60 * 1000
+    ).toISOString();
 
     const { data: logs, error } = await this.supabase
       .from('log')
-      .select('*')
+      .select(
+        'created_at,status_code,path,ip,error_message'
+      )
       .gte('created_at', since)
-      .order('created_at', { ascending: false });
+      .order('created_at', {
+        ascending: false
+      });
 
     if (error) {
-      console.error('هەڵە لە کاتی خوێندنەوەی لۆگ:', error.message);
-      // پێشتر ئەمە null دەگەڕایەوە و runScheduledReport/runInstantAlert بێدەنگ کۆتایی دەهات
-      // بەبێ ناردنی هیچ ئاگاداریەک. ئێستا throw دەکەین تاکو هەڵەکە لە GitHub Actions logs
-      // دا دیار بێت و کاتیش وا بکات نامەیەکی fallback بنێردرێت (بڕوانە runScheduledReport).
-      throw new Error(`Supabase query failed (logs): ${error.message}`);
+      throw new Error(
+        `Supabase log query failed: ${error.message}`
+      );
     }
 
-    if (!logs || logs.length === 0) {
-      return { total: 0, errors: 0, errorRate: 0, requests: 0, statuses: {}, paths: {}, suspiciousIps: [] };
-    }
+    const rows = logs || [];
 
-    const total = logs.length;
-    const errors = logs.filter(row => row.status_code >= 400 || row.error_message).length;
-    const errorRate = total > 0 ? (errors / total) * 100 : 0;
     const statuses = {};
     const paths = {};
-    let suspiciousIps = new Set();
-
-    logs.forEach(row => {
-      const status = row.status_code || 'unknown';
-      statuses[status] = (statuses[status] || 0) + 1;
-      const path = row.path || '/';
-      paths[path] = (paths[path] || 0) + 1;
-      if (row.error_message && (row.error_message.includes('SQL') || row.error_message.includes('script') || row.error_message.includes('exec'))) {
-        if (row.ip) suspiciousIps.add(row.ip);
-      }
-    });
-
     const ipCounts = {};
-    logs.forEach(row => { if (row.ip) ipCounts[row.ip] = (ipCounts[row.ip] || 0) + 1; });
-    for (const [ip, count] of Object.entries(ipCounts)) {
-      if (count > 10) suspiciousIps.add(ip);
+
+    const suspiciousIps = new Set();
+
+    for (const row of rows) {
+      const status =
+        row.status_code ?? 'unknown';
+
+      statuses[status] =
+        (statuses[status] || 0) + 1;
+
+      const path =
+        row.path || '/';
+
+      paths[path] =
+        (paths[path] || 0) + 1;
+
+      if (row.ip) {
+        ipCounts[row.ip] =
+          (ipCounts[row.ip] || 0) + 1;
+      }
+
+      const errorText =
+        String(
+          row.error_message || ''
+        ).toLowerCase();
+
+      /*
+       * Security signals.
+       * These are signals for review, not proof of an attack.
+       */
+
+      if (
+        row.ip &&
+        /(sql|script|exec|union select|javascript:)/i
+          .test(errorText)
+      ) {
+        suspiciousIps.add(row.ip);
+      }
     }
+
+    /*
+     * High request activity.
+     *
+     * This is intentionally much higher than the old
+     * 10 requests/minute rule to reduce false positives.
+     */
+
+    for (const [ip, count] of Object.entries(ipCounts)) {
+      if (count >= 30) {
+        suspiciousIps.add(ip);
+      }
+    }
+
+    const total = rows.length;
+
+    const errors = rows.filter(row =>
+      Number(row.status_code) >= 400 ||
+      Boolean(row.error_message)
+    ).length;
+
+    const clientErrors = rows.filter(row =>
+      Number(row.status_code) >= 400 &&
+      Number(row.status_code) < 500
+    ).length;
+
+    const serverErrors = rows.filter(row =>
+      Number(row.status_code) >= 500
+    ).length;
+
+    const errorRate =
+      total > 0
+        ? (errors / total) * 100
+        : 0;
 
     return {
       total,
-      errors,
-      errorRate,
       requests: total,
+
+      errors,
+      clientErrors,
+      serverErrors,
+
+      errorRate,
+
       statuses,
       paths,
-      suspiciousIps: Array.from(suspiciousIps),
-      firstLog: logs[logs.length - 1]?.created_at,
-      lastLog: logs[0]?.created_at
+      ipCounts,
+
+      suspiciousIps:
+        Array.from(suspiciousIps),
+
+      firstLog:
+        rows.at(-1)?.created_at || null,
+
+      lastLog:
+        rows.at(0)?.created_at || null,
+
+      windowMinutes:
+        timeWindowMinutes
     };
   }
 
-  // ------------------- پشکنینی تەندروستی ماڵپەڕ -------------------
+  // =========================================================
+  // WEBSITE HEALTH
+  // =========================================================
+
   async checkWebsiteHealth() {
-    const startTime = Date.now();
-    let statusText = '🟢 بە تەواوی کاردەکات';
-    let isOnline = true;
-    let statusCode = 200;
-    let responseTime = 0;
+    const started = Date.now();
 
     try {
-      const response = await axios.get(this.WEBSITE_URL, { timeout: 8000 });
-      responseTime = Date.now() - startTime;
-      statusCode = response.status;
-      if (response.status !== 200) {
-        statusText = `🟡 کۆدی وەڵام: ${response.status}`;
-        isOnline = false;
-      }
+      const response = await axios.get(
+        this.WEBSITE_URL,
+        {
+          timeout: this.TIMEOUT_MS,
+
+          /*
+           * Do not throw automatically for 4xx/5xx.
+           * We want to record the actual HTTP status.
+           */
+          validateStatus: () => true,
+
+          maxRedirects: 5
+        }
+      );
+
+      const responseTime =
+        Date.now() - started;
+
+      return {
+        isOnline:
+          response.status >= 200 &&
+          response.status < 400,
+
+        statusCode:
+          response.status,
+
+        responseTime,
+
+        error: null
+      };
     } catch (error) {
-      responseTime = Date.now() - startTime;
-      statusText = `🔴 بەردەست نییە! هەڵە: ${error.message}`;
-      isOnline = false;
-      statusCode = 500;
+      return {
+        isOnline: false,
+
+        statusCode: null,
+
+        responseTime:
+          Date.now() - started,
+
+        error:
+          error.code === 'ECONNABORTED'
+            ? 'Timeout'
+            : error.message
+      };
     }
-    return { isOnline, statusText, statusCode, responseTime };
   }
 
-  // ------------------- دروستکردنی ڕاپۆرتی نایاب -------------------
-  buildExquisiteReport(stats, health) {
-    const now = new Date();
-    const dateStr = now.toLocaleString('ckb-IR', { timeZone: 'Asia/Tehran', hour12: false });
-    const dayOfWeek = now.toLocaleString('ckb-IR', { weekday: 'long', timeZone: 'Asia/Tehran' });
+  // =========================================================
+  // SUPABASE HEALTH
+  // =========================================================
 
-    let riskLevel = '🟢 ئاسایی';
-    let riskEmoji = '🌿';
-    if (stats.errorRate > 20) { riskLevel = '🔴 مەترسی زۆر بەرز'; riskEmoji = '🚨'; }
-    else if (stats.errorRate > 5) { riskLevel = '🟠 مەترسی ناوەند'; riskEmoji = '⚠️'; }
+  async checkSupabaseHealth() {
+    const started = Date.now();
 
-    const topPaths = Object.entries(stats.paths)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3)
-      .map(([p, c]) => `  • ${this.escapeMd(p)} : ${c} داواکاری`)
-      .join('\n');
+    try {
+      const { error } =
+        await this.supabase
+          .from('log')
+          .select('created_at')
+          .limit(1);
 
-    const suspiciousIpsList = stats.suspiciousIps.map(ip => this.escapeMd(ip)).join('\n  • ');
+      return {
+        isOnline: !error,
 
-    const message = `
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃   📢 *KurdMDb - چاودێری تەندروستی*  ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+        responseTime:
+          Date.now() - started,
 
-🌹 *بۆ سەرۆکی گەورەی KurdMDb، بەڕێز ئامێز،*
-سڵاو و ڕێزی تایبەت. سیستەمی زیرەکی چاودێری سەلامەتی،
-ڕاپۆرتی خوارەوەی ئامادە کردووە.
+        error:
+          error?.message || null
+      };
+    } catch (error) {
+      return {
+        isOnline: false,
 
-────────────────────────────────
-📅 *ڕۆژ و کات:* ${dayOfWeek}، ${this.escapeMd(dateStr)}
-🌐 *ماڵپەڕ:* ${this.escapeMd(this.WEBSITE_URL)}
-📊 *دۆخی سەرەکی:* ${health.isOnline ? '🟢 ئۆنلاین و چالاک' : '🔴 ئۆفلاین (پێویستی بە چاودێری هەنگاوەکانە)'}
-⏱️ *کاتی وەڵامدانەوە:* ${health.responseTime} میلیچرکە
-📡 *کۆدی دۆخ:* ${health.statusCode}
+        responseTime:
+          Date.now() - started,
 
-────────────────────────────────
-📈 *ئامارەکانی کۆتایی (١ خولەکی ڕابردوو):*
-• *کۆی گشتی داواکاری:* ${stats.total}
-• *ژمارەی هەڵەکان:* ${stats.errors} (${stats.errorRate.toFixed(2)}%)
-• *پلەی مەترسی:* ${riskLevel} ${riskEmoji}
-
-📋 *پڕداواکاریترین پەڕەکان:*
-${topPaths || '  • هیچ داواکارییەک تۆمار نەکراوە'}
-
-🌍 *پۆلێنی کۆدەکانی دۆخ (HTTP):*
-${Object.entries(stats.statuses).map(([code, count]) => `  • ${code} : ${count} جار`).join('\n') || '  • هیچ'}
-
-${stats.suspiciousIps.length > 0 ? `🛡️ *ئاگاداری ئاسایش:* ئەم ئایپییانە هەڵەی گوماناویان هەیە:\n  • ${suspiciousIpsList}` : '✅ *هیچ هێرش یان چالاکییەکی گوماناوی نەدۆزراوەتەوە.*'}
-
-────────────────────────────────
-💎 *کورتە:* 
-ماڵپەڕی KurdMDb لەم ساتەدا ${health.isOnline ? 'ساغ و بەهێزە' : 'دۆخی ئۆفڵاینە'}. سیستەمەکە بەردەوامە لە چاودێریکردن.
-
----
-*ئەم ڕاپۆرتە لەلایەن سکرێپتی چاودێری سەلامەتی KurdMDb ـەوە ئامادە کراوە و نێردراوە.*
-🌹 *سوپاس بۆ سەرپەرشتی و پشتیوانی بەڕێزیان.* 
-    `.trim();
-    return message;
+        error:
+          error.message
+      };
+    }
   }
 
-  // ------------------- دروستکردنی نامەی فریاگوزاری -------------------
-  buildExquisiteAlert(stats, health, triggerReason) {
-    const now = new Date();
-    const dateStr = now.toLocaleString('ckb-IR', { timeZone: 'Asia/Tehran', hour12: false });
+  // =========================================================
+  // MONITORING ASSESSMENT
+  // =========================================================
 
-    const suspiciousIpsInline = stats.suspiciousIps.length > 0
-      ? stats.suspiciousIps.map(ip => this.escapeMd(ip)).join(', ')
-      : 'هیچ نەدۆزرایەوە';
+  assess(
+    stats,
+    website,
+    database
+  ) {
+    const issues = [];
 
-    const topPaths = Object.entries(stats.paths)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([p, c]) => `  • ${this.escapeMd(p)} : ${c} داواکاری`)
-      .join('\n');
+    /*
+     * Website
+     */
 
-    const message = `
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃   🚨 *ئاگادارکردنەوەی فریاگوزاری سەلامەتی* 🚨 ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+    if (!website.isOnline) {
+      issues.push(
+        'Website is unavailable'
+      );
+    } else if (
+      website.responseTime >= 3000
+    ) {
+      issues.push(
+        'Website response is slow'
+      );
+    }
 
-💢 *بە سەرۆکی KurdMDb، بەڕێز ئامێز،*
-ئاگادارکردنەوەیەکی زۆر لە ڕادەبەدەر! سیستەمەکەمان چالاکییەکی نائاسایی دۆزیوەتەوە 
-کە دەتوانێت مەترسی لەسەر بەردەوامی ماڵپەڕەکە دروست بکات.
+    /*
+     * Database
+     */
 
-────────────────────────────────
-📌 *هۆکاری ئاگادارکردنەوە:* 
-${this.escapeMd(triggerReason)}
+    if (!database.isOnline) {
+      issues.push(
+        'Supabase is unavailable'
+      );
+    }
 
-⏰ *کاتی ڕوودان:* ${this.escapeMd(dateStr)}
-🌐 *ماڵپەڕی مەبەست:* ${this.escapeMd(this.WEBSITE_URL)}
-📊 *دۆخی ئێستای ماڵپەڕ:* ${health.isOnline ? '🟢 هێشتا ئۆنلاینە' : '🔴 کەوتووەتە خوارەوە یان خاوە'}
+    /*
+     * Server errors
+     */
 
-────────────────────────────────
-📉 *ئامارەکانی ١ خولەکی کۆتایی (هۆکاری ئاگاداری):*
-• *کۆی داواکاری:* ${stats.total}
-• *ڕێژەی هەڵە:* ${stats.errors} لە کۆی ${stats.total} (${stats.errorRate.toFixed(2)}%)
-• *ئایپیە گوماناوەکان:* ${suspiciousIpsInline}
+    if (stats.serverErrors > 0) {
+      issues.push(
+        `${stats.serverErrors} server error(s) detected`
+      );
+    }
 
-📋 *پەڕە بەرکارەکان (لەوانەیە ئامانجی هێرش بن):*
-${topPaths || '  • دەستنیشان نەکراوە'}
+    /*
+     * Error rate
+     */
 
-────────────────────────────────
-⚡ *پێشنیاری خێرا:*
-١. سەیری لاگەکانی ڕاژەخۆر بکە بۆ بینینی ئایپیە تایبەتەکان.
-٢. ئەگەر هێرشەکە بەردەوام بوو، ڕێگای سەلامەتی (Cloudflare یان WAF) چالاک بکە.
-٣. تیمی تەکنیکی ئاگادار بکەرەوە بۆ ڕووبەڕووبوونەوەی خێرا.
+    if (stats.errorRate >= 10) {
+      issues.push(
+        `High error rate: ${stats.errorRate.toFixed(1)}%`
+      );
+    }
 
----
-*ئەم نامە لە ڕێگەی سیستەمی فریاگوزاریی KurdMDb ـەوە ڕاستەوخۆ نێردراوە.*
-🔥 *هیوای سەلامەتی و بەهێزی بۆ ماڵپەڕەکەمان!*
-    `.trim();
-    return message;
+    /*
+     * Security signals
+     */
+
+    if (
+      stats.suspiciousIps.length > 0
+    ) {
+      issues.push(
+        `${stats.suspiciousIps.length} IP(s) need review`
+      );
+    }
+
+    /*
+     * Overall level
+     */
+
+    let level = 'OK';
+
+    if (
+      !website.isOnline ||
+      !database.isOnline ||
+      stats.serverErrors >= 10 ||
+      stats.errorRate >= 20
+    ) {
+      level = 'CRITICAL';
+    } else if (
+      issues.length > 0
+    ) {
+      level = 'ATTENTION';
+    }
+
+    return {
+      level,
+      issues
+    };
   }
 
-  // ------------------- ناردنی نامە -------------------
-  // ئەگەر Markdown هەر شکا (بۆ نموونە کاراکتەرێکی چاوەڕوان‌نەکراو تێپەڕی escaping بوو)،
-  // بەبێ parse_mode دووبارە هەوڵ دەدەینەوە وەکو دەقی سادە، تاکو بەلایەنی کەم ئاگاداریەکە بگات
-  // لە جیاتی ئەوەی بە تەواوی بفەوتێت.
+  // =========================================================
+  // STATUS FORMAT
+  // =========================================================
+
+  statusLine(
+    ok,
+    good = 'OK',
+    bad = 'DOWN'
+  ) {
+    return ok
+      ? `🟢 ${good}`
+      : `🔴 ${bad}`;
+  }
+
+  // =========================================================
+  // MAIN TELEGRAM REPORT
+  // =========================================================
+
+  buildExquisiteReport(
+    stats,
+    website,
+    database
+  ) {
+    const assessment =
+      this.assess(
+        stats,
+        website,
+        database
+      );
+
+    const statusIcon =
+      assessment.level === 'OK'
+        ? '🟢'
+        : assessment.level === 'ATTENTION'
+          ? '🟠'
+          : '🔴';
+
+    const now =
+      this.formatTime(
+        new Date()
+      );
+
+    const topPaths =
+      Object.entries(stats.paths)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
+
+    const topIps =
+      Object.entries(stats.ipCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
+
+    const statuses =
+      Object.entries(stats.statuses)
+        .sort(
+          (a, b) =>
+            Number(a[0]) -
+            Number(b[0])
+        );
+
+    const report = [
+      '<b>🎛 KurdMDb Monitoring</b>',
+      '<i>Operational health &amp; security overview</i>',
+
+      '',
+
+      `<b>${statusIcon} Overall:</b> ${assessment.level}`,
+
+      `🕒 <b>Checked:</b> ${
+        this.escapeHtml(now)
+      }`,
+
+      `📊 <b>Window:</b> ${
+        stats.windowMinutes
+      } minutes`,
+
+      '',
+
+      '<b>🌐 SERVICES</b>',
+
+      `Website   ${
+        this.statusLine(
+          website.isOnline
+        )
+      } • ${
+        website.statusCode ?? '—'
+      } • ${
+        website.responseTime
+      } ms`,
+
+      `Supabase  ${
+        this.statusLine(
+          database.isOnline
+        )
+      } • ${
+        database.responseTime
+      } ms`,
+
+      '',
+
+      '<b>📈 TRAFFIC</b>',
+
+      `Requests       <b>${
+        this.formatNumber(
+          stats.total
+        )
+      }</b>`,
+
+      `Errors         <b>${
+        this.formatNumber(
+          stats.errors
+        )
+      }</b> (${
+        stats.errorRate.toFixed(1)
+      }%)`,
+
+      `4xx            <b>${
+        this.formatNumber(
+          stats.clientErrors
+        )
+      }</b>`,
+
+      `5xx            <b>${
+        this.formatNumber(
+          stats.serverErrors
+        )
+      }</b>`,
+
+      '',
+
+      '<b>📍 TOP ENDPOINTS</b>',
+
+      topPaths.length
+        ? topPaths
+            .map(
+              ([path, count]) =>
+                `• <code>${
+                  this.escapeHtml(path)
+                }</code> — ${count}`
+            )
+            .join('\n')
+        : '• No requests recorded',
+
+      '',
+
+      '<b>🔢 HTTP STATUS</b>',
+
+      statuses.length
+        ? statuses
+            .map(
+              ([status, count]) =>
+                `• <code>${
+                  this.escapeHtml(status)
+                }</code> — ${count}`
+            )
+            .join('\n')
+        : '• No status data',
+
+      '',
+
+      '<b>🛡 SECURITY SIGNALS</b>',
+
+      stats.suspiciousIps.length
+        ? `⚠️ Review IP(s): ${
+            stats.suspiciousIps
+              .slice(0, 8)
+              .map(
+                ip =>
+                  `<code>${
+                    this.escapeHtml(ip)
+                  }</code>`
+              )
+              .join(', ')
+          }`
+        : '🟢 No high-confidence anomaly detected in observed logs.',
+
+      topIps.length
+        ? `🔥 Highest activity: ${
+            this.escapeHtml(
+              topIps[0][0]
+            )
+          } (${
+            topIps[0][1]
+          } requests)`
+        : '',
+
+      '',
+
+      '<b>🧭 ISSUES</b>',
+
+      assessment.issues.length
+        ? assessment.issues
+            .map(
+              issue =>
+                `• ${
+                  this.escapeHtml(issue)
+                }`
+            )
+            .join('\n')
+        : '• None detected',
+
+      '',
+
+      '<i>Monitoring only • Backup system untouched</i>'
+    ];
+
+    return report.join('\n');
+  }
+
+  // =========================================================
+  // ALERT
+  // =========================================================
+
+  buildExquisiteAlert(
+    stats,
+    website,
+    database,
+    triggerReason
+  ) {
+    const assessment =
+      this.assess(
+        stats,
+        website,
+        database
+      );
+
+    return [
+      '<b>🚨 KurdMDb Monitoring Alert</b>',
+
+      '',
+
+      `<b>Trigger:</b> ${
+        this.escapeHtml(
+          triggerReason
+        )
+      }`,
+
+      `<b>Level:</b> ${
+        assessment.level
+      }`,
+
+      `<b>Website:</b> ${
+        this.statusLine(
+          website.isOnline
+        )
+      } • ${
+        website.statusCode ?? '—'
+      } • ${
+        website.responseTime
+      } ms`,
+
+      `<b>Supabase:</b> ${
+        this.statusLine(
+          database.isOnline
+        )
+      } • ${
+        database.responseTime
+      } ms`,
+
+      `<b>Window:</b> ${
+        stats.windowMinutes
+      } minutes`,
+
+      '',
+
+      `Requests: <b>${
+        stats.total
+      }</b>`,
+
+      `Errors: <b>${
+        stats.errors
+      }</b> (${
+        stats.errorRate.toFixed(1)
+      }%)`,
+
+      `5xx: <b>${
+        stats.serverErrors
+      }</b>`,
+
+      `Suspicious IPs: <b>${
+        stats.suspiciousIps.length
+      }</b>`,
+
+      '',
+
+      assessment.issues.length
+        ? assessment.issues
+            .map(
+              issue =>
+                `• ${
+                  this.escapeHtml(issue)
+                }`
+            )
+            .join('\n')
+        : '• No additional issue detected.',
+
+      '',
+
+      '<i>Review the underlying logs before taking action.</i>'
+    ].join('\n');
+  }
+
+  // =========================================================
+  // TELEGRAM
+  // =========================================================
+
   async sendMessage(text) {
     try {
-      const response = await axios.post(`${this.telegramApi}/sendMessage`, {
-        chat_id: this.CHAT_ID,
-        text: text,
-        parse_mode: 'Markdown',
-      });
+      const response =
+        await axios.post(
+          `${this.telegramApi}/sendMessage`,
+          {
+            chat_id: this.CHAT_ID,
+            text,
+            parse_mode: 'HTML',
+            disable_web_page_preview: true
+          }
+        );
+
       return response.data.result.message_id;
     } catch (error) {
-      const apiDescription = error.response?.data?.description;
-      console.error('ناردنی نامە بە Markdown سەرنەکەوت:', apiDescription || error.message);
+      console.error(
+        'Telegram send failed:',
+        error.response?.data
+          ?.description ||
+        error.message
+      );
 
-      // fallback: هەمان دەق بەبێ parse_mode بنێرە (ئەستێرەکان وەک دەقی ئاسایی دەردەکەون،
-      // بەڵام لانیکەم نامەکە دەگات)
+      /*
+       * Fallback without HTML.
+       */
+
       try {
-        const fallbackResponse = await axios.post(`${this.telegramApi}/sendMessage`, {
-          chat_id: this.CHAT_ID,
-          text: text,
-        });
-        console.warn('⚠️ نامە بەبێ Markdown formatting نێردرا (fallback).');
-        return fallbackResponse.data.result.message_id;
+        const fallback =
+          await axios.post(
+            `${this.telegramApi}/sendMessage`,
+            {
+              chat_id: this.CHAT_ID,
+              text: text.replace(
+                /<[^>]+>/g,
+                ''
+              ),
+              disable_web_page_preview: true
+            }
+          );
+
+        return fallback.data.result.message_id;
       } catch (fallbackError) {
-        console.error('ناردنی fallback ـیش سەرنەکەوت:', fallbackError.response?.data?.description || fallbackError.message);
+        console.error(
+          'Telegram fallback failed:',
+          fallbackError.message
+        );
+
         return null;
       }
     }
   }
 
-  // ------------------- سڕینەوەی نامە کۆنەکان -------------------
+  // =========================================================
+  // OLD TELEGRAM MESSAGE CLEANUP
+  // =========================================================
+
   async deleteOldMessages() {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const cutoff =
+      new Date(
+        Date.now() -
+        30 *
+        24 *
+        60 *
+        60 *
+        1000
+      ).toISOString();
 
-    const { data: oldLogs, error } = await this.supabase
+    const {
+      data,
+      error
+    } = await this.supabase
       .from('security_logs')
-      .select('id, message_id, chat_id')
-      .lt('sent_at', thirtyDaysAgo.toISOString());
+      .select(
+        'id,message_id'
+      )
+      .lt(
+        'sent_at',
+        cutoff
+      );
 
-    if (error || !oldLogs) return;
-
-    for (const log of oldLogs) {
-      try {
-        await axios.post(`${this.telegramApi}/deleteMessage`, {
-          chat_id: this.CHAT_ID,
-          message_id: log.message_id,
-        });
-        await this.supabase.from('security_logs').delete().eq('id', log.id);
-        console.log(`🗑️ نامەی ${log.message_id} سڕایەوە.`);
-      } catch (e) { /* بێدەنگ */ }
-    }
-  }
-
-  // ------------------- هەڵگرتنی ناسنامەی نامە -------------------
-  async saveMessageId(messageId) {
-    if (!messageId) return;
-    await this.supabase.from('security_logs').insert([
-      { message_id: messageId, chat_id: String(this.CHAT_ID), sent_at: new Date().toISOString() }
-    ]);
-  }
-
-  // =================== بلۆککردنی ئایپ ===================
-  async blockIp(ipAddress, reason = 'هێرش یان داواکاریی زۆر') {
-    if (!ipAddress) return false;
-    try {
-      const { error } = await this.supabase
-        .from('blocked_ips')
-        .upsert({ ip_address: ipAddress, reason: reason, expires_at: new Date(Date.now() + 24*60*60*1000).toISOString() }, { onConflict: 'ip_address' });
-      if (error) throw error;
-      console.log(`🔒 ئایپی ${ipAddress} بە سەرکەوتوویی ڕەشکرا.`);
-      return true;
-    } catch (e) {
-      console.error('هەڵە لە بلۆککردنی ئایپ:', e.message);
-      return false;
-    }
-  }
-
-  async isIpBlocked(ipAddress) {
-    if (!ipAddress) return false;
-    const { data, error } = await this.supabase
-      .from('blocked_ips')
-      .select('expires_at')
-      .eq('ip_address', ipAddress)
-      .maybeSingle();
-
-    if (error || !data) return false;
-    if (new Date(data.expires_at) < new Date()) {
-      await this.supabase.from('blocked_ips').delete().eq('ip_address', ipAddress);
-      return false;
-    }
-    return true;
-  }
-
-  async autoBlockSuspiciousIps(stats) {
-    if (!stats || !stats.suspiciousIps || stats.suspiciousIps.length === 0) return;
-    for (const ip of stats.suspiciousIps) {
-      await this.blockIp(ip, 'دۆزرایەوە لە کاتی هێرشی ئاسایشدا');
-    }
-  }
-
-  // =================== کارە سەرەکییەکان ===================
-  async runScheduledReport() {
-    console.log('📡 دەستپێکردنی ڕاپۆرتی خولەکی...');
-    const health = await this.checkWebsiteHealth();
-    let stats;
-    try {
-      stats = await this.analyzeLogs(1);
-    } catch (error) {
-      // پێشتر: analyzeLogs لە کاتی هەڵەی Supabase دا بێدەنگ null دەگەڕایەوە و runScheduledReport
-      // بەبێ ناردنی هیچ نامەیەک کۆتایی دەهات. ئێستا بەلایەنی کەم ئاگاداریەکی خێرا دەنێرین
-      // تاکو بزانیت مۆنیتەرینگەکە خۆی شکاوە.
-      console.error('❌ analyzeLogs شکا:', error.message);
-      await this.sendMessage(`⚠️ *ڕاپۆرتی چاودێری سەرنەکەوت*\nهەڵە لە خوێندنەوەی لۆگەکانی Supabase: ${this.escapeMd(error.message)}`);
+    if (
+      error ||
+      !data
+    ) {
       return;
     }
-    if (!stats) return;
-    const msg = this.buildExquisiteReport(stats, health);
-    const msgId = await this.sendMessage(msg);
-    if (!msgId) {
-      console.error('❌ نامەی ڕاپۆرت بە تەواوی نەنێردرا (نە Markdown و نە fallback).');
+
+    for (const row of data) {
+      try {
+        await axios.post(
+          `${this.telegramApi}/deleteMessage`,
+          {
+            chat_id: this.CHAT_ID,
+            message_id:
+              row.message_id
+          }
+        );
+
+        await this.supabase
+          .from('security_logs')
+          .delete()
+          .eq(
+            'id',
+            row.id
+          );
+      } catch {
+        // Ignore already-deleted messages.
+      }
     }
-    await this.saveMessageId(msgId);
-    await this.deleteOldMessages();
-    console.log('✅ ڕاپۆرت تەواو بوو.');
   }
 
-  async runInstantAlert(triggerReason = 'دەستی پاچکرا لەلایەن ڕاژەخۆرەوە (مەترسی دۆزرایەوە)') {
-    console.log('🚨 دەستپێکردنی ئاگاداری فریاگوزاری...');
-    const health = await this.checkWebsiteHealth();
-    let stats;
-    try {
-      stats = await this.analyzeLogs(1);
-    } catch (error) {
-      console.error('❌ analyzeLogs شکا:', error.message);
-      await this.sendMessage(`⚠️ *ئاگاداری فریاگوزاری سەرنەکەوت*\nهەڵە لە خوێندنەوەی لۆگەکانی Supabase: ${this.escapeMd(error.message)}`);
+  // =========================================================
+  // SAVE MESSAGE ID
+  // =========================================================
+
+  async saveMessageId(messageId) {
+    if (!messageId) {
+      return;
+    }
+
+    await this.supabase
+      .from('security_logs')
+      .insert([
+        {
+          message_id:
+            messageId,
+
+          chat_id:
+            String(
+              this.CHAT_ID
+            ),
+
+          sent_at:
+            new Date().toISOString()
+        }
+      ]);
+  }
+
+  // =========================================================
+  // EXISTING IP FUNCTIONS
+  // =========================================================
+
+  async blockIp(
+    ipAddress,
+    reason = 'Suspicious activity'
+  ) {
+    if (!ipAddress) {
       return false;
     }
-    if (!stats) return false;
 
-    if (stats.suspiciousIps && stats.suspiciousIps.length > 0) {
-      await this.autoBlockSuspiciousIps(stats);
+    const {
+      error
+    } = await this.supabase
+      .from('blocked_ips')
+      .upsert(
+        {
+          ip_address:
+            ipAddress,
+
+          reason,
+
+          expires_at:
+            new Date(
+              Date.now() +
+              24 *
+              60 *
+              60 *
+              1000
+            ).toISOString()
+        },
+        {
+          onConflict:
+            'ip_address'
+        }
+      );
+
+    return !error;
+  }
+
+  async isIpBlocked(
+    ipAddress
+  ) {
+    if (!ipAddress) {
+      return false;
     }
 
-    const msg = this.buildExquisiteAlert(stats, health, triggerReason);
-    const msgId = await this.sendMessage(msg);
-    if (!msgId) {
-      console.error('❌ نامەی ئاگاداری بە تەواوی نەنێردرا (نە Markdown و نە fallback).');
+    const {
+      data,
+      error
+    } = await this.supabase
+      .from('blocked_ips')
+      .select(
+        'expires_at'
+      )
+      .eq(
+        'ip_address',
+        ipAddress
+      )
+      .maybeSingle();
+
+    if (
+      error ||
+      !data
+    ) {
+      return false;
     }
-    await this.saveMessageId(msgId);
-    console.log('✅ ئاگاداری فریاگوزاری نێردرا و ئایپە گوماناوەکان بلۆک کران.');
+
+    if (
+      new Date(
+        data.expires_at
+      ) < new Date()
+    ) {
+      await this.supabase
+        .from('blocked_ips')
+        .delete()
+        .eq(
+          'ip_address',
+          ipAddress
+        );
+
+      return false;
+    }
+
     return true;
+  }
+
+  // =========================================================
+  // IMPORTANT:
+  // MONITORING ONLY
+  //
+  // This function is intentionally NOT called by the
+  // scheduled monitoring report.
+  // =========================================================
+
+  async autoBlockSuspiciousIps(
+    stats
+  ) {
+    for (
+      const ip of
+      stats?.suspiciousIps || []
+    ) {
+      await this.blockIp(
+        ip,
+        'Suspicious activity detected by monitor'
+      );
+    }
+  }
+
+  // =========================================================
+  // SCHEDULED MONITORING
+  // =========================================================
+
+  async runScheduledReport() {
+    console.log(
+      `📡 Monitoring started: ${
+        this.WINDOW_MINUTES
+      } minute window`
+    );
+
+    const [
+      website,
+      database
+    ] = await Promise.all([
+      this.checkWebsiteHealth(),
+      this.checkSupabaseHealth()
+    ]);
+
+    let stats;
+
+    try {
+      stats =
+        await this.analyzeLogs();
+    } catch (error) {
+      console.error(
+        error.message
+      );
+
+      const id =
+        await this.sendMessage(
+          `<b>⚠️ KurdMDb Monitoring</b>\n\n` +
+          `Could not read monitoring logs.\n` +
+          `<code>${
+            this.escapeHtml(
+              error.message
+            )
+          }</code>`
+        );
+
+      await this.saveMessageId(
+        id
+      );
+
+      return;
+    }
+
+    const id =
+      await this.sendMessage(
+        this.buildExquisiteReport(
+          stats,
+          website,
+          database
+        )
+      );
+
+    await this.saveMessageId(
+      id
+    );
+
+    await this.deleteOldMessages();
+
+    console.log(
+      '✅ Monitoring report sent.'
+    );
+  }
+
+  // =========================================================
+  // MANUAL / INSTANT ALERT
+  // =========================================================
+
+  async runInstantAlert(
+    triggerReason =
+      'Manual monitoring alert'
+  ) {
+    const [
+      website,
+      database
+    ] = await Promise.all([
+      this.checkWebsiteHealth(),
+      this.checkSupabaseHealth()
+    ]);
+
+    let stats;
+
+    try {
+      stats =
+        await this.analyzeLogs();
+    } catch (error) {
+      await this.sendMessage(
+        `<b>⚠️ Monitoring alert failed</b>\n` +
+        `<code>${
+          this.escapeHtml(
+            error.message
+          )
+        }</code>`
+      );
+
+      return false;
+    }
+
+    /*
+     * IMPORTANT:
+     * Do NOT automatically block IPs here.
+     *
+     * This system is monitoring-only.
+     */
+
+    const id =
+      await this.sendMessage(
+        this.buildExquisiteAlert(
+          stats,
+          website,
+          database,
+          triggerReason
+        )
+      );
+
+    await this.saveMessageId(
+      id
+    );
+
+    return Boolean(id);
   }
 }
 
