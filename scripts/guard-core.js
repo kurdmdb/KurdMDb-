@@ -1,588 +1,435 @@
-import axios from 'axios';
-import { createClient } from '@supabase/supabase-js';
+import axios from "axios";
+import { createClient } from "@supabase/supabase-js";
 
-const {
-  SECURITY_TELEGRAM_BOT_TOKEN,
-  TELEGRAM_CHAT_ID,
-  SUPABASE_URL,
-  SUPABASE_SERVICE_KEY,
-  WEBSITE_URL = 'https://kurd-m-db.vercel.app',
-} = process.env;
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+
+const TELEGRAM_BOT_TOKEN =
+  process.env.SECURITY_TELEGRAM_BOT_TOKEN ||
+  process.env.TELEGRAM_BOT_TOKEN;
+
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+
+const WEBSITE_URL =
+  process.env.WEBSITE_URL || "https://kurdmdb.vercel.app";
 
 const WINDOW_MINUTES = 75;
 const SUSPICIOUS_IP_THRESHOLD = 30;
+const HIGH_ACTIVITY_THRESHOLD = 500;
+const SLOW_RESPONSE_THRESHOLD_MS = 3000;
 
-class SecurityGuard {
-  constructor() {
-    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-      throw new Error(
-        'SUPABASE_URL or SUPABASE_SERVICE_KEY is missing.'
-      );
-    }
+if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+  throw new Error("SUPABASE_URL or SUPABASE_SERVICE_KEY is missing.");
+}
 
-    this.supabase = createClient(
-      SUPABASE_URL,
-      SUPABASE_SERVICE_KEY
+if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+  throw new Error(
+    "Telegram configuration is missing: SECURITY_TELEGRAM_BOT_TOKEN/TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID."
+  );
+}
+
+const supabase = createClient(
+  SUPABASE_URL,
+  SUPABASE_SERVICE_KEY
+);
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function formatDate(date = new Date()) {
+  return date.toISOString().replace("T", " ").replace("Z", " UTC");
+}
+
+async function analyzeLogs() {
+  const since = new Date(
+    Date.now() - WINDOW_MINUTES * 60 * 1000
+  ).toISOString();
+
+  const { data, error } = await supabase
+    .from("log")
+    .select(
+      "id,user_id,action,table_name,record_id,created_at,ip_address,description"
+    )
+    .gte("created_at", since)
+    .order("created_at", { ascending: false })
+    .limit(HIGH_ACTIVITY_THRESHOLD + 1);
+
+  if (error) {
+    throw new Error(
+      `Supabase log query failed: ${error.message}`
     );
   }
 
-  // ==========================================
-  // خوێندنەوە و شیکردنەوەی Log ـەکان
-  // ==========================================
-  async analyzeLogs(timeWindowMinutes = WINDOW_MINUTES) {
-    const since = new Date(
-      Date.now() - timeWindowMinutes * 60 * 1000
-    ).toISOString();
+  const logs = data || [];
 
-    try {
-      const { data, error } = await this.supabase
-        .from('log')
-        .select(`
-          id,
-          user_id,
-          action,
-          table_name,
-          record_id,
-          created_at,
-          ip_address,
-          description
-        `)
-        .gte('created_at', since)
-        .order('created_at', { ascending: false });
+  const ipCounts = new Map();
+  const actionCounts = new Map();
+  const tableCounts = new Map();
 
-      if (error) {
-        throw new Error(
-          `Supabase log query failed: ${error.message}`
-        );
-      }
+  for (const log of logs) {
+    const ip = log.ip_address || "unknown";
+    const action = log.action || "unknown";
+    const table = log.table_name || "unknown";
 
-      const logs = data || [];
+    ipCounts.set(ip, (ipCounts.get(ip) || 0) + 1);
+    actionCounts.set(
+      action,
+      (actionCounts.get(action) || 0) + 1
+    );
+    tableCounts.set(
+      table,
+      (tableCounts.get(table) || 0) + 1
+    );
+  }
 
-      // ------------------------------------------
-      // کۆکردنەوەی IP ـەکان
-      // ------------------------------------------
-      const ipCounts = new Map();
+  const suspiciousIps = [];
 
-      for (const log of logs) {
-        const ip = log.ip_address;
-
-        if (!ip) continue;
-
-        ipCounts.set(
-          ip,
-          (ipCounts.get(ip) || 0) + 1
-        );
-      }
-
-      // ------------------------------------------
-      // IP ـە زۆر چالاکەکان
-      // ------------------------------------------
-      const suspiciousIps = [...ipCounts.entries()]
-        .filter(
-          ([, count]) =>
-            count >= SUSPICIOUS_IP_THRESHOLD
-        )
-        .sort((a, b) => b[1] - a[1])
-        .map(([ip, count]) => ({
-          ip,
-          count,
-        }));
-
-      // ------------------------------------------
-      // ژماردنی Action ـەکان
-      // ------------------------------------------
-      const actionCounts = {};
-
-      for (const log of logs) {
-        const action = log.action || 'نادیار';
-
-        actionCounts[action] =
-          (actionCounts[action] || 0) + 1;
-      }
-
-      // ------------------------------------------
-      // ژماردنی Table ـەکان
-      // ------------------------------------------
-      const tableCounts = {};
-
-      for (const log of logs) {
-        const table =
-          log.table_name || 'نادیار';
-
-        tableCounts[table] =
-          (tableCounts[table] || 0) + 1;
-      }
-
-      return {
-        success: true,
-        totalLogs: logs.length,
-        suspiciousIps,
-        actionCounts,
-        tableCounts,
-        logs,
-        windowMinutes: timeWindowMinutes,
-      };
-    } catch (error) {
-      console.error(
-        'Log analysis error:',
-        error.message
-      );
-
-      return {
-        success: false,
-        totalLogs: 0,
-        suspiciousIps: [],
-        actionCounts: {},
-        tableCounts: {},
-        logs: [],
-        windowMinutes: timeWindowMinutes,
-        error: error.message,
-      };
+  for (const [ip, count] of ipCounts.entries()) {
+    if (ip !== "unknown" && count >= SUSPICIOUS_IP_THRESHOLD) {
+      suspiciousIps.push({
+        ip,
+        count
+      });
     }
   }
 
-  // ==========================================
-  // پشکنینی Website
-  // ==========================================
-  async checkWebsiteHealth() {
-    try {
-      const start = Date.now();
+  const alerts = [];
 
-      const response = await axios.get(
-        WEBSITE_URL,
-        {
-          timeout: 10000,
-          validateStatus: () => true,
-        }
-      );
-
-      const responseTime = Date.now() - start;
-      const status = response.status;
-
-      return {
-        healthy:
-          status >= 200 &&
-          status < 400,
-
-        status,
-        responseTime,
-      };
-    } catch (error) {
-      return {
-        healthy: false,
-        status: null,
-        responseTime: null,
-        error: error.message,
-      };
-    }
+  if (logs.length >= HIGH_ACTIVITY_THRESHOLD) {
+    alerts.push({
+      level: "high",
+      type: "high_activity",
+      message:
+        `ژمارەی Log ـەکان بەرزە: ${logs.length} ڕووداو لە ${WINDOW_MINUTES} خولەکدا.`
+    });
   }
 
-  // ==========================================
-  // پشکنینی Supabase
-  // ==========================================
-  async checkSupabaseHealth() {
-    try {
-      const { error } = await this.supabase
-        .from('log')
-        .select('id')
-        .limit(1);
-
-      if (error) {
-        return {
-          healthy: false,
-          error: error.message,
-        };
-      }
-
-      return {
-        healthy: true,
-      };
-    } catch (error) {
-      return {
-        healthy: false,
-        error: error.message,
-      };
-    }
+  for (const item of suspiciousIps) {
+    alerts.push({
+      level: "medium",
+      type: "suspicious_ip",
+      ip: item.ip,
+      count: item.count,
+      message:
+        `IP ـێک ${item.count} ڕووداوی تۆمار کردووە لە ${WINDOW_MINUTES} خولەکدا.`
+    });
   }
 
-  // ==========================================
-  // دروستکردنی ڕاپۆرتی Telegram
-  // ==========================================
-  buildReport(
-    website,
-    supabase,
-    logs
-  ) {
-    const now = new Date();
+  return {
+    logs,
+    totalLogs: logs.length,
+    ipCounts,
+    actionCounts,
+    tableCounts,
+    suspiciousIps,
+    alerts
+  };
+}
 
-    const baghdadTime =
-      new Intl.DateTimeFormat(
-        'ku-IQ',
-        {
-          timeZone: 'Asia/Baghdad',
-          dateStyle: 'medium',
-          timeStyle: 'medium',
-        }
-      ).format(now);
+async function checkWebsiteHealth() {
+  const startedAt = Date.now();
 
-    const lines = [];
+  try {
+    const response = await axios.get(WEBSITE_URL, {
+      timeout: 10000,
+      validateStatus: () => true
+    });
 
-    // ------------------------------------------
-    // سەرەتا
-    // ------------------------------------------
-    lines.push(
-      '<b>🛡 ڕاپۆرتی چاودێری KurdMDb</b>'
-    );
+    const responseTime = Date.now() - startedAt;
 
-    lines.push('');
+    const statusCode = response.status;
+    const healthy =
+      statusCode >= 200 && statusCode < 400;
 
-    lines.push(
-      `🕒 کات: ${this.escapeHtml(baghdadTime)}`
-    );
+    const slow =
+      responseTime >= SLOW_RESPONSE_THRESHOLD_MS;
 
-    lines.push(
-      `⏱ ماوەی چاودێری: ${logs.windowMinutes} خولەک`
-    );
+    const serverError =
+      statusCode >= 500 && statusCode <= 599;
 
-    lines.push('');
+    return {
+      healthy,
+      slow,
+      serverError,
+      statusCode,
+      responseTime,
+      error: null
+    };
+  } catch (error) {
+    const responseTime = Date.now() - startedAt;
 
-    // ------------------------------------------
-    // Website
-    // ------------------------------------------
-    lines.push('<b>🌐 دۆخی ماڵپەڕ</b>');
-
-    if (website.healthy) {
-      lines.push(
-        `🟢 ماڵپەڕ بەردەستە`
-      );
-
-      lines.push(
-        `• HTTP: ${website.status}`
-      );
-
-      if (website.responseTime !== null) {
-        lines.push(
-          `• وەڵامدانەوە: ${website.responseTime} ms`
-        );
-      }
-    } else {
-      lines.push(
-        '🔴 کێشە لە ماڵپەڕ دۆزرایەوە'
-      );
-
-      if (website.status) {
-        lines.push(
-          `• HTTP: ${website.status}`
-        );
-      }
-
-      if (website.responseTime !== null) {
-        lines.push(
-          `• وەڵامدانەوە: ${website.responseTime} ms`
-        );
-      }
-
-      if (website.error) {
-        lines.push(
-          `• هەڵە: ${this.escapeHtml(
-            website.error
-          )}`
-        );
-      }
-    }
-
-    lines.push('');
-
-    // ------------------------------------------
-    // Supabase
-    // ------------------------------------------
-    lines.push(
-      '<b>🗄 دۆخی Supabase</b>'
-    );
-
-    if (supabase.healthy) {
-      lines.push(
-        '🟢 Supabase بەردەستە'
-      );
-
-      lines.push(
-        '• خوێندنەوەی Log ـەکان سەرکەوتوو بوو'
-      );
-    } else {
-      lines.push(
-        '🔴 کێشە لە Supabase دۆزرایەوە'
-      );
-
-      if (supabase.error) {
-        lines.push(
-          `• هەڵە: ${this.escapeHtml(
-            supabase.error
-          )}`
-        );
-      }
-    }
-
-    lines.push('');
-
-    // ------------------------------------------
-    // Log ـەکان
-    // ------------------------------------------
-    lines.push(
-      '<b>📊 دۆخی Log ـەکان</b>'
-    );
-
-    if (logs.success) {
-      lines.push(
-        `• کۆی ڕووداوەکان: ${logs.totalLogs}`
-      );
-
-      if (logs.totalLogs === 0) {
-        lines.push(
-          'ℹ️ لەم ماوەیەدا هیچ Log ـێک تۆمار نەکراوە.'
-        );
-      }
-    } else {
-      lines.push(
-        '🔴 نەکرا Log ـەکان بخوێندرێنەوە.'
-      );
-
-      if (logs.error) {
-        lines.push(
-          `• هۆکار: ${this.escapeHtml(
-            logs.error
-          )}`
-        );
-      }
-    }
-
-    lines.push('');
-
-    // ------------------------------------------
-    // Action ـەکان
-    // ------------------------------------------
-    const actions =
-      Object.entries(logs.actionCounts);
-
-    if (actions.length > 0) {
-      lines.push(
-        '<b>📌 کردارە تۆمارکراوەکان</b>'
-      );
-
-      for (
-        const [action, count]
-        of actions.slice(0, 10)
-      ) {
-        lines.push(
-          `• ${this.escapeHtml(
-            action
-          )}: ${count} جار`
-        );
-      }
-
-      lines.push('');
-    }
-
-    // ------------------------------------------
-    // Table ـەکان
-    // ------------------------------------------
-    const tables =
-      Object.entries(logs.tableCounts);
-
-    if (tables.length > 0) {
-      lines.push(
-        '<b>🗂 خشتەکانی بەکارهاتوو</b>'
-      );
-
-      for (
-        const [table, count]
-        of tables.slice(0, 10)
-      ) {
-        lines.push(
-          `• ${this.escapeHtml(
-            table
-          )}: ${count} جار`
-        );
-      }
-
-      lines.push('');
-    }
-
-    // ------------------------------------------
-    // IP ـەکان
-    // ------------------------------------------
-    lines.push(
-      '<b>🔎 چاودێری IP</b>'
-    );
-
-    if (
-      logs.suspiciousIps.length > 0
-    ) {
-      lines.push(
-        `⚠️ ${logs.suspiciousIps.length} IP ـی زۆر چالاک دۆزرایەوە:`
-      );
-
-      for (
-        const item
-        of logs.suspiciousIps.slice(0, 10)
-      ) {
-        lines.push(
-          `• <code>${this.escapeHtml(
-            item.ip
-          )}</code> — ${item.count} ڕووداو`
-        );
-      }
-
-      lines.push('');
-
-      lines.push(
-        'ℹ️ تەنها چاودێری کراوە؛ هیچ IP ـێک خۆکارانە block نەکراوە.'
-      );
-    } else {
-      lines.push(
-        '🟢 هیچ IP ـێک سنووری چاودێری تێنەپەڕاندووە.'
-      );
-    }
-
-    lines.push('');
-
-    // ------------------------------------------
-    // دۆخی گشتی
-    // ------------------------------------------
-    const overallHealthy =
-      website.healthy &&
-      supabase.healthy &&
-      logs.success;
-
-    if (overallHealthy) {
-      lines.push(
-        '<b>🟢 دۆخی گشتی</b>'
-      );
-
-      lines.push(
-        'هەموو پشکنینە سەرەکییەکان بە سەرکەوتوویی تێپەڕین.'
-      );
-    } else {
-      lines.push(
-        '<b>🟠 دۆخی گشتی</b>'
-      );
-
-      lines.push(
-        'یەکێک لە پشکنینەکان کێشەی هەیە و پێویستی بە پشکنینە.'
-      );
-    }
-
-    lines.push('');
-
-    lines.push(
-      '📋 ئەم سیستەمە تەنها بۆ چاودێرییە و هیچ گۆڕانکارییەکی خۆکار لە سیستەمدا ناکات.'
-    );
-
-    return lines.join('\n');
-  }
-
-  // ==========================================
-  // پاراستنی HTML ـی Telegram
-  // ==========================================
-  escapeHtml(value) {
-    return String(value)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
-  }
-
-  // ==========================================
-  // ناردنی پەیام بۆ Telegram
-  // ==========================================
-  async sendMessage(message) {
-    if (
-      !SECURITY_TELEGRAM_BOT_TOKEN ||
-      !TELEGRAM_CHAT_ID
-    ) {
-      throw new Error(
-        'Telegram environment variables are missing.'
-      );
-    }
-
-    const url =
-      `https://api.telegram.org/bot${SECURITY_TELEGRAM_BOT_TOKEN}/sendMessage`;
-
-    try {
-      await axios.post(
-        url,
-        {
-          chat_id: TELEGRAM_CHAT_ID,
-          text: message,
-          parse_mode: 'HTML',
-          disable_web_page_preview: true,
-        },
-        {
-          timeout: 10000,
-        }
-      );
-    } catch (error) {
-      console.error(
-        'Telegram send error:',
-        error.response?.data ||
-          error.message
-      );
-
-      throw error;
-    }
-  }
-
-  // ==========================================
-  // ڕاپۆرتی خۆکار
-  // ==========================================
-  async runScheduledReport() {
-    const [
-      website,
-      supabase,
-      logs,
-    ] = await Promise.all([
-      this.checkWebsiteHealth(),
-      this.checkSupabaseHealth(),
-      this.analyzeLogs(
-        WINDOW_MINUTES
-      ),
-    ]);
-
-    const report =
-      this.buildReport(
-        website,
-        supabase,
-        logs
-      );
-
-    await this.sendMessage(report);
-  }
-
-  // ==========================================
-  // ئاگادارکردنەوەی خێرا
-  // تەنها چاودێری — هیچ Block ـێک ناکرێت
-  // ==========================================
-  async runInstantAlert() {
-    const [
-      website,
-      supabase,
-      logs,
-    ] = await Promise.all([
-      this.checkWebsiteHealth(),
-      this.checkSupabaseHealth(),
-      this.analyzeLogs(
-        WINDOW_MINUTES
-      ),
-    ]);
-
-    const report =
-      this.buildReport(
-        website,
-        supabase,
-        logs
-      );
-
-    await this.sendMessage(report);
+    return {
+      healthy: false,
+      slow: false,
+      serverError: false,
+      statusCode: null,
+      responseTime,
+      error: error.message
+    };
   }
 }
 
-export default SecurityGuard;
+async function checkSupabaseHealth() {
+  try {
+    const { error } = await supabase
+      .from("log")
+      .select("id")
+      .limit(1);
+
+    if (error) {
+      return {
+        healthy: false,
+        error: error.message
+      };
+    }
+
+    return {
+      healthy: true,
+      error: null
+    };
+  } catch (error) {
+    return {
+      healthy: false,
+      error: error.message
+    };
+  }
+}
+
+function buildSecurityAlerts(
+  website,
+  supabaseHealth,
+  logAnalysis
+) {
+  const alerts = [...logAnalysis.alerts];
+
+  if (!website.healthy) {
+    alerts.push({
+      level: "critical",
+      type: "website_down",
+      message:
+        "ماڵپەڕ وەڵامی تەندروست نەدا."
+    });
+  }
+
+  if (website.serverError) {
+    alerts.push({
+      level: "high",
+      type: "server_error",
+      message:
+        `ماڵپەڕ HTTP ${website.statusCode} ـی وەرگرت.`
+    });
+  }
+
+  if (website.slow) {
+    alerts.push({
+      level: "medium",
+      type: "slow_website",
+      message:
+        `ماڵپەڕ خاو بوو: ${website.responseTime} ms.`
+    });
+  }
+
+  if (!supabaseHealth.healthy) {
+    alerts.push({
+      level: "critical",
+      type: "supabase_down",
+      message:
+        "پەیوەندی بە Supabase سەرکەوتوو نەبوو."
+    });
+  }
+
+  return alerts;
+}
+
+function buildNormalReport(
+  website,
+  supabaseHealth,
+  logAnalysis
+) {
+  const actionLines =
+    [...logAnalysis.actionCounts.entries()]
+      .slice(0, 10)
+      .map(
+        ([action, count]) =>
+          `• ${escapeHtml(action)}: ${count} جار`
+      )
+      .join("\n") ||
+    "• هیچ کردارێک نییە";
+
+  const tableLines =
+    [...logAnalysis.tableCounts.entries()]
+      .slice(0, 10)
+      .map(
+        ([table, count]) =>
+          `• ${escapeHtml(table)}: ${count} جار`
+      )
+      .join("\n") ||
+    "• هیچ خشتەیەک نییە";
+
+  let ipStatus =
+    "🟢 هیچ IP ـێک سنووری چاودێری تێنەپەڕاندووە.";
+
+  if (logAnalysis.suspiciousIps.length > 0) {
+    ipStatus =
+      logAnalysis.suspiciousIps
+        .map(
+          (item) =>
+            `🟠 ${escapeHtml(item.ip)} — ${item.count} ڕووداو`
+        )
+        .join("\n");
+  }
+
+  const websiteStatus = website.healthy
+    ? "🟢 ماڵپەڕ بەردەستە"
+    : "🔴 ماڵپەڕ کێشەی هەیە";
+
+  const supabaseStatus = supabaseHealth.healthy
+    ? "🟢 Supabase بەردەستە"
+    : "🔴 Supabase کێشەی هەیە";
+
+  return `
+<b>🛡 ڕاپۆرتی چاودێری KurdMDb</b>
+
+🕒 کات: ${escapeHtml(formatDate())}
+⏱ ماوەی چاودێری: ${WINDOW_MINUTES} خولەک
+
+<b>🌐 دۆخی ماڵپەڕ</b>
+${websiteStatus}
+• HTTP: ${website.statusCode ?? "N/A"}
+• وەڵامدانەوە: ${website.responseTime} ms
+
+<b>🗄 دۆخی Supabase</b>
+${supabaseStatus}
+
+<b>📊 دۆخی Log ـەکان</b>
+• کۆی ڕووداوەکان: ${logAnalysis.totalLogs}
+
+<b>📌 کردارە تۆمارکراوەکان</b>
+${actionLines}
+
+<b>🗂 خشتەکانی بەکارهاتوو</b>
+${tableLines}
+
+<b>🔎 چاودێری IP</b>
+${ipStatus}
+
+<b>🟢 دۆخی گشتی</b>
+هەموو پشکنینە سەرەکییەکان بە سەرکەوتوویی تێپەڕین.
+
+📋 ئەم سیستەمە تەنها بۆ چاودێرییە و هیچ گۆڕانکارییەکی خۆکار لە سیستەمدا ناکات.
+`.trim();
+}
+
+function buildAlertReport(alerts, website, supabaseHealth) {
+  const alertLines = alerts
+    .map((alert, index) => {
+      const level =
+        alert.level === "critical"
+          ? "🔴"
+          : alert.level === "high"
+            ? "🟠"
+            : "🟡";
+
+      return `${index + 1}. ${level} ${escapeHtml(
+        alert.message
+      )}`;
+    })
+    .join("\n");
+
+  const websiteStatus = website.healthy
+    ? `🟢 HTTP ${website.statusCode} — ${website.responseTime} ms`
+    : `🔴 بەردەست نییە — ${
+        website.error || `HTTP ${website.statusCode ?? "N/A"}`
+      }`;
+
+  const supabaseStatus = supabaseHealth.healthy
+    ? "🟢 بەردەستە"
+    : "🔴 پەیوەندی سەرکەوتوو نەبوو";
+
+  return `
+<b>🚨 ئاگادارییەکی چاودێری KurdMDb</b>
+
+🕒 کات: ${escapeHtml(formatDate())}
+⏱ ماوەی چاودێری: ${WINDOW_MINUTES} خولەک
+
+<b>⚠️ ڕووداوەکان</b>
+${alertLines}
+
+<b>🌐 ماڵپەڕ</b>
+${websiteStatus}
+
+<b>🗄 Supabase</b>
+${supabaseStatus}
+
+<b>ℹ️ تێبینی</b>
+ئەم ئاگادارییە تەنها نیشانەی چاودێرییە.
+بەرزبوونەوەی چالاکی بە تەنیا بەڵگەی DDoS نییە.
+
+📋 هیچ IP ـێک خۆکارانە block نەکراوە.
+`.trim();
+}
+
+async function sendTelegramMessage(message) {
+  const url =
+    `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+
+  await axios.post(url, {
+    chat_id: TELEGRAM_CHAT_ID,
+    text: message,
+    parse_mode: "HTML",
+    disable_web_page_preview: true
+  });
+}
+
+async function runScheduledReport() {
+  const [website, supabaseHealth, logAnalysis] =
+    await Promise.all([
+      checkWebsiteHealth(),
+      checkSupabaseHealth(),
+      analyzeLogs()
+    ]);
+
+  const alerts = buildSecurityAlerts(
+    website,
+    supabaseHealth,
+    logAnalysis
+  );
+
+  if (alerts.length > 0) {
+    const message = buildAlertReport(
+      alerts,
+      website,
+      supabaseHealth
+    );
+
+    await sendTelegramMessage(message);
+    return;
+  }
+
+  const message = buildNormalReport(
+    website,
+    supabaseHealth,
+    logAnalysis
+  );
+
+  await sendTelegramMessage(message);
+}
+
+runScheduledReport()
+  .then(() => {
+    console.log("Security monitoring completed successfully.");
+  })
+  .catch((error) => {
+    console.error(
+      "Security monitoring failed:",
+      error.message
+    );
+
+    process.exitCode = 1;
+  });
